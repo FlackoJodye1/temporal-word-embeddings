@@ -1,4 +1,7 @@
 .idea/
 .ipynb_checkpoints/
 .data/
+.DS_Store/
 data/
+packages/
+old-combined_streams.ipynb
