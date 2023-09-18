@@ -3,6 +3,10 @@
 .data/
 .DS_Store/
 DS_Store/
-data/
-packages/
-old-combined_streams.ipynb
+data/cade/
+data/input/
+data/split/
+data/processed_data.csv
+data/ppmi-matrices/large
+packages/DynamicWord2Vec2/
+packages/Word2VecCustom/
