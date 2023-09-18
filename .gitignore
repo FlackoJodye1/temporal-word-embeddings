@@ -6,6 +6,7 @@ DS_Store/
 data/cade/
 data/input/
 data/split/
+data/ppmi-matrices/medium
 data/processed_data.csv
 data/ppmi-matrices/large
 packages/DynamicWord2Vec2/
