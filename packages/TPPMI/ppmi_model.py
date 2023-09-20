@@ -32,7 +32,7 @@ def remove_infrequent_words(tokenized_corpus: list, min_freq: str) -> list:
 class PPMIModel:
     """Pointwise Mutual Information (PPMI) model for text data."""
 
-    def __init__(self, text_df, min_freq=0, ppmi_df=None):
+    def __init__(self, text_df, min_freq=0, ppmi_matrix=None, vocab=None):
         """Initialize the PPMIModel.
 
         Args:
@@ -49,17 +49,17 @@ class PPMIModel:
             row = np.zeros((1, len(self.vocab)))[0]  # V x 1
             self.ppmi_matrix = np.array([row for _ in range(len(self.vocab))])  # V x V
             self._ppmi_matrix_exists = False
-        elif ppmi_df is not None:
-            self.vocab = sorted(list(set(ppmi_df.columns)))
+        elif ppmi_matrix is not None:
+            self.vocab = vocab
             self._word2ind = self._create_word2ind()
-            self.ppmi_matrix = ppmi_df.values
+            self.ppmi_matrix = ppmi_matrix.toarray()
             self._ppmi_matrix_exists = True
         else:
             raise ValueError("Either a dataframe containing texts or a dataframe containing ppmi-matrices has to be "
                              "provided.")
 
     @classmethod
-    def construct_from_data(cls, ppmi_df: pd.DataFrame):
+    def construct_from_data(cls, ppmi_matrix: sp.csr_matrix, vocab: list):
         """Construct PPMIModel from precomputed PPMI matrix (DataFrame).
 
         Args:
@@ -67,8 +67,10 @@ class PPMIModel:
 
         Returns:
             PPMIModel: Constructed PPMIModel instance.
+            :param vocab:
+            :param ppmi_matrix:
         """
-        return cls(None, 0, ppmi_df.fillna(0))
+        return cls(None, 0, ppmi_matrix, vocab)
 
     @classmethod
     def construct_from_texts(cls, text_df: pd.DataFrame, min_freq=0):
