@@ -1,10 +1,12 @@
-from heapq import nlargest
-from collections import Counter
+from pathlib import Path
 
 import nltk
+import pickle
 import numpy as np
-import pandas
 import pandas as pd
+import scipy.sparse as sp
+from heapq import nlargest
+from collections import Counter
 
 
 def remove_infrequent_words(tokenized_corpus: list, min_freq: str) -> list:
@@ -99,7 +101,7 @@ class PPMIModel:
 
         return word2ind
 
-    def _compute_co_occurrence_matrix(self, window_size=4) -> np.ndarray:
+    def _compute_co_occurrence_matrix(self, window_size=5) -> np.ndarray:
         """Compute the co-occurrence matrix.
 
         Args:
@@ -131,7 +133,7 @@ class PPMIModel:
 
         return co_matrix
 
-    def compute_ppmi_matrix(self, window_size=4) -> np.ndarray:
+    def compute_ppmi_matrix(self, window_size=5) -> np.ndarray:
         """Compute the Pointwise Mutual Information (PPMI) matrix.
 
         Args:
@@ -243,10 +245,18 @@ class PPMIModel:
     def contains_in_vocab(self, word: str) -> bool:
         return word in self.vocab
 
-    def get_as_df(self) -> pandas.DataFrame:
+    def get_as_df(self) -> pd.DataFrame:
         """Get the PPMI matrix as a DataFrame.
 
         Returns:
             pd.DataFrame: PPMI matrix as a DataFrame.
         """
         return pd.DataFrame(data=self.ppmi_matrix, columns=self.vocab, index=self.vocab)
+
+    def save(self, month: str, path: Path):
+        with open(path / f"ppmi-{month}-01.pkl", "wb") as f:
+            pickle.dump(self.vocab, f)
+        sparse_ppmi_matrix = sp.csr_matrix(self.ppmi_matrix)
+        sp.save_npz(path / f"ppmi-{month}-01.npz", sparse_ppmi_matrix)
+        print(f"PPMI data for {month} saved successfully.")
+        print(f"Vocabulary Size: {self.get_vocabulary_size()}")
