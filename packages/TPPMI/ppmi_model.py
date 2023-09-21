@@ -9,7 +9,7 @@ from heapq import nlargest
 from collections import Counter
 
 
-def remove_infrequent_words(tokenized_corpus: list, min_freq: str) -> list:
+def remove_infrequent_words(tokenized_corpus: list, min_freq: int) -> list:
     """Remove infrequent words from the corpus.
        Otherwise, calculating the matrices later might not be feasible (O(V^2))
     Args:

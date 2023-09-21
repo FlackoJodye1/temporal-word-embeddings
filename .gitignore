@@ -1,6 +1,6 @@
+__pycache__/
 .idea/
 .ipynb_checkpoints/
-.data/
 .DS_Store/
 DS_Store/
 data/cade/
@@ -10,3 +10,4 @@ data/processed_data.csv
 data/ppmi-matrices/large/
 packages/DynamicWord2Vec2/
 packages/Word2VecCustom/
+packages/TPPMI/__pycache__/
