@@ -36,7 +36,7 @@ They are handpicked and one can clearly see the difference in the resulting embe
 
 The Models are stored outside the repository on my personal Google Drive.
 The sharable links are stored in the drive-urls.json. To download the models one has to run the download_models.py 
-script, parameters allows one to specify which models should be downloaded
+script, parameters allows one to specify which models should be downloaded.
 
 * **Static Word2Vec model**: python download_models.py --static
 * **Cade models**: python download_models.py --cade
