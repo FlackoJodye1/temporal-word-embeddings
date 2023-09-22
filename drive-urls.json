@@ -1,0 +1,62 @@
+{
+  "models": [
+    {
+      "type": "Static",
+      "models": [
+        {
+          "name": "word2vec.model",
+          "file_id": "1wFaMTekYISTSlXkb79mvd82UD42q2H1d"
+        }
+      ]
+    },
+    {
+      "type": "Cade",
+      "models": [
+        {
+          "name": "01_Jun_to_01_Jul.model",
+          "file_id": "1Pznm8-8H1c1IBODvjgop8Lyo1I70THvK"
+        },
+        {
+          "name": "01_Jul_to_01_Aug.model",
+          "file_id": "1C5q8EkzxwDQDcUkmavqcFsoojTV8HP5i"
+        },
+        {
+          "name": "01_Aug_to_01_Sep.model",
+          "file_id": "16KaL2d3hdk7WwOoWJobOmoy09nZOFxlZ"
+        },
+        {
+          "name": "01_Sep_to_01_Oct.model",
+          "file_id": "1j_SNQeG_26CfxHqf0JD-HlKp6ukzxLbJ"
+        },
+        {
+          "name": "01_Oct_to_01_Nov.model",
+          "file_id": "1KlDIe7AQA41sH1kej1nM7lckJ0vFHXcq"
+        },
+        {
+          "name": "01_Nov_to_01_Dec.model",
+          "file_id": "1ITosV4Sfb-rjt6nz7HxI9awJxfP8BhVY"
+        },
+        {
+          "name": "01_Dec_to_01_Jan.model",
+          "file_id": "1E7KUKorRJJ_eb7g-Hzi0-0ufHJr2i7Du"
+        },
+        {
+          "name": "01_Jan_to_01_Feb.model",
+          "file_id": "1pZbvMAKg2Dwbeyc2cqQDjEgZWB2hQUeE"
+        },
+        {
+          "name": "01_Feb_to_01_Mar.model",
+          "file_id": "1sM1UPfrbGEY7c0IbdArqqMAZaW4-RKof"
+        },
+        {
+          "name": "01_Mar_to_01_Apr.model",
+          "file_id": "1LH3bfMuKbKNDxiWfMNVTK13l5RwK8C9A"
+        },
+        {
+          "name": "01_Apr_to_28_Apr.model",
+          "file_id": "1SL9PYZJESfg_NP9flv9BhV4ngPFyqSsU"
+        }
+      ]
+    }
+  ]
+}
