@@ -4,8 +4,9 @@
       "type": "Static",
       "models": [
         {
-          "name": "word2vec.model",
-          "file_id": "1wFaMTekYISTSlXkb79mvd82UD42q2H1d"
+          "word2vec.model": "1-_l5F6o_nhFtugtq_SwuWimsS-3QzS15",
+          "word2vec.model.syn1neg.npy": "14RKczdxvKARzTRiqhxFfyldKXzRph9xi",
+          "word2vec.model.wv.vectors.npy": "1Zu1G9W4s_pyMMJzKKP5rxHA-ZsG1DJbt"
         }
       ]
     },
