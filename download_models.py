@@ -1,6 +1,5 @@
-import json
 import os
-
+import json
 import gdown
 import argparse
 
@@ -16,19 +15,17 @@ def load_model_data(json_filename):
 
 
 def download_static_model(model_dict):
-    # Check if the "static" model type exists in the model dictionary
     if "static" in model_dict:
-        # Create the "model" directory if it does not exist
+        static_download_data = model_dict.get("static", [])
         if not os.path.exists("model"):
             os.mkdir("model")
-        # Create the "static" directory if it does not exist
+        # Create the "monthly" directory if it does not exist
         if not os.path.exists("model/static"):
             os.mkdir("model/static")
-        model_static_file_id = model_dict["static"][0]["file_id"]
-        model_static_path = "model/static/word2vec.model"
-        model_static_download_link = f"https://drive.google.com/uc?id={model_static_file_id}"
-        # Download the static Word2Vec model
-        gdown.download(model_static_download_link, model_static_path, quiet=False)
+        for file_name, file_id in static_download_data[0].items():
+            download_link = f"https://drive.google.com/uc?id={file_id}"
+            destination_path = os.path.join("model/static", file_name)
+            gdown.download(download_link, destination_path, quiet=False)
     else:
         print("Static model not found in the JSON data.")
 
@@ -54,6 +51,7 @@ def download_cade_models(model_dict):
 
 if __name__ == "__main__":
     # Create an argument parser
+
     parser = argparse.ArgumentParser(description="Download models from Google Drive.")
 
     # Add an argument for model selection
