@@ -7,6 +7,27 @@ To see the progress only the ***model-analysis.ipynb*** needs to be run.
 The models are already build and are stored in the /model directory. There are two models per event which are trained
 separately on the corpus split at the given date. Alignment was enforced via the compass.
 
+## Setup
+
+### Installation
+
+For the installation of the necessary packages you need to both install the dependencies specified in
+the environment.yml and the requirement.txt. To do so use the following commands in this order:
+
+1. conda env create -f environment.yml
+2. pip install requirement.txt
+
+### Download Models
+
+The Models are stored outside the repository on my personal Google Drive.
+The sharable links are stored in the drive-urls.json. To download the models one has to run the download_models.py
+script, parameters allows one to specify which models should be downloaded.
+
+* **Static Word2Vec model**: python download_models.py --static
+* **Cade models**: python download_models.py --cade
+* **PPMI models**: python download_models.py --ppmi
+* **All**: python download_models.py --static --cade --ppmi
+
 ## Files
 
 ### data-preprocessing.ipynb
@@ -23,25 +44,11 @@ The models are then stored in the model folder, which is part of repo
 Loading the models, probing them with keywords and creating visualization, which compare the embeddings before and after impactful events occured.
 (This is the only notebook that needs to run, since the models are already build)
 
-## Impactful Events 
+## Impactful Events
 
 * Release of Brittney Grinner (08.12.2022)
 * Elon Musk Twitter aquisition (27.10.2022)
 * Attack on Paul Pelosi (28.10.2022)
 * Colorado Springs nightclub shooting. (19.11.2022)
-  
-They are handpicked and one can clearly see the difference in the resulting embeddings of their keywords. 
 
-## Download Models
-
-The Models are stored outside the repository on my personal Google Drive.
-The sharable links are stored in the drive-urls.json. To download the models one has to run the download_models.py 
-script, parameters allows one to specify which models should be downloaded.
-
-* **Static Word2Vec model**: python download_models.py --static
-* **Cade models**: python download_models.py --cade
-* **PPMI models**: python download_models.py --ppmi
-* **All**: python download_models.py --static --cade --ppmi
-
-
-
+They are handpicked and one can clearly see the difference in the resulting embeddings of their keywords.
