@@ -30,6 +30,25 @@ def download_static_model(model_dict):
         print("Static model not found in the JSON data.")
 
 
+def download_ppmi_models(model_dict):
+    if "ppmi-models" in model_dict:
+        ppmi_download_data = model_dict.get("ppmi-models", [])
+        if not os.path.exists("data"):
+            os.mkdir("model")
+        if not os.path.exists("ppmi-matrices"):
+            os.mkdir("ppmi-matrices")
+        for data in ppmi_download_data:
+            print(data)
+            matrix_download_link = f"https://drive.google.com/uc?id={data['matrix_file_id']}"
+            vocab_download_link = f"https://drive.google.com/uc?id={data['vocab_file_id']}"
+            matrix_destination_path = f"data/ppmi-matrices/{data['name']}.npz"
+            vocab_destination_path = f"data/ppmi-matrices/{data['name']}.pkl"
+            gdown.download(matrix_download_link, matrix_destination_path)
+            gdown.download(vocab_download_link, vocab_destination_path)
+    else:
+        print("PPMI models not found in the JSON data.")
+
+
 def download_cade_models(model_dict):
     # Check if the "cade" model type exists in the model dictionary
     if "cade" in model_dict:
@@ -57,6 +76,7 @@ if __name__ == "__main__":
     # Add an argument for model selection
     parser.add_argument("--static", action="store_true", help="Download static Word2Vec model")
     parser.add_argument("--cade", action="store_true", help="Download Cade models")
+    parser.add_argument("--ppmi", action="store_true", help="Download PPMI models")  # Added this line
 
     # Parse the command-line arguments
     args = parser.parse_args()
@@ -70,3 +90,6 @@ if __name__ == "__main__":
 
     if args.cade:
         download_cade_models(model_dict)
+
+    if args.ppmi:  # Added this condition
+        download_ppmi_models(model_dict)

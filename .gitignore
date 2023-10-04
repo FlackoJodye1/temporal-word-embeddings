@@ -5,11 +5,12 @@ __pycache__/
 .DS_Store/
 model/
 DS_Store/
+data/
 data/cade/
 data/input/
 data/split/
 data/processed_data.csv
-data/ppmi-matrices/large/
+data/ppmi-matrices/
 packages/DynamicWord2Vec2/
 packages/Word2VecCustom/
 packages/TPPMI/__pycache__/

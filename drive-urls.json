@@ -58,6 +58,66 @@
           "file_id": "1SL9PYZJESfg_NP9flv9BhV4ngPFyqSsU"
         }
       ]
+    },
+    {
+      "type": "PPMI-Models",
+      "models": [
+        {
+          "name": "ppmi-06-01",
+          "matrix_file_id": "1k_Fnnbt8UDH3M09s6VOV7cE2dmlpqjnm",
+          "vocab_file_id": "1ConpxQMAez37D3nwDxMdX2gwnpEztOwU"
+        },
+        {
+          "name": "ppmi-07-01",
+          "matrix_file_id": "1AoLZkpTUZGkjrAsGuM5D1ipJ1Ltrr1A_",
+          "vocab_file_id": "1440ERmQAGH16lK2HVoIzRVF4oP0jmWV1"
+        },
+        {
+          "name": "ppmi-08-01",
+          "matrix_file_id": "1qxBySbEn0czgx8d8-TmlNE9w-ruyAh5i",
+          "vocab_file_id": "1CK-xFOFlAJ9JKqrYDzokTu2rogvR4tKo"
+        },
+        {
+          "name": "ppmi-09-01",
+          "matrix_file_id": "1djl55P6BFUudQv8QGzF0XkbTnRKSi40f",
+          "vocab_file_id": "1qm0rp7AeHKLcbKfb2tQBsgV4JBoF4PTV"
+        },
+        {
+          "name": "ppmi-10-01",
+          "matrix_file_id": "1fI2oosGuqo6n4Mb17giEQbuNgzy3ywf1",
+          "vocab_file_id": "1jSIqdblli0Ug_cfhfAZnDsfeC0W77ptd"
+        },
+        {
+          "name": "ppmi-11-01",
+          "matrix_file_id": "1c9Wq3PU7qUaHf3kkClI57gXyWVqUutHB",
+          "vocab_file_id": "1a1phqudkkT-AWWwhkYjyPaIOAxZnJRg_"
+        },
+        {
+          "name": "ppmi-12-01",
+          "matrix_file_id": "1zqTC3UfK7oOaz8AN7xkZhLNEpQVmdLxA",
+          "vocab_file_id": "1AfHfm4MGoCfGNI1VLr8VTvrRt40fwlHt"
+        },
+        {
+          "name": "ppmi-01-01",
+          "matrix_file_id": "1xDEs8AwcWPHly0qQRn7zpRqujJuhJhAj",
+          "vocab_file_id": "1vBhLjQNXXb04JoLKWhENrUWeg-HOHpo8"
+        },
+        {
+          "name": "ppmi-02-01",
+          "matrix_file_id": "1LaedJGgthVkqS0Bc_2SiUbuh7y1iyPRf",
+          "vocab_file_id": "1yIuXaxBIiTJLLexfh6QkzinGe6LQHgzI"
+        },
+        {
+          "name": "ppmi-03-01",
+          "matrix_file_id": "1UxdeWN1x_weOZ7EnZBikaW8JdiGme-Ze",
+          "vocab_file_id": "1fDXCWOfbqiujRWTkYM40cxxKD6MDgzTY"
+        },
+        {
+          "name": "ppmi-04-01",
+          "matrix_file_id": "1y8P-QY10HRVeMF0BppmpISJy8JJTVN-R",
+          "vocab_file_id": "1njCbf27mwQkBNRoQHGCMdX4IJo5mBGpg"
+        }
+      ]
     }
   ]
 }
