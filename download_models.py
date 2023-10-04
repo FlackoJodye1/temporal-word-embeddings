@@ -35,8 +35,8 @@ def download_ppmi_models(model_dict):
         ppmi_download_data = model_dict.get("ppmi-models", [])
         if not os.path.exists("data"):
             os.mkdir("model")
-        if not os.path.exists("ppmi-matrices"):
-            os.mkdir("ppmi-matrices")
+        if not os.path.exists("data/ppmi-matrices"):
+            os.mkdir("data/ppmi-matrices")
         for data in ppmi_download_data:
             print(data)
             matrix_download_link = f"https://drive.google.com/uc?id={data['matrix_file_id']}"
