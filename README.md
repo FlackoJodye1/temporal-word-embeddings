@@ -40,7 +40,8 @@ script, parameters allows one to specify which models should be downloaded.
 
 * **Static Word2Vec model**: python download_models.py --static
 * **Cade models**: python download_models.py --cade
-* **All**: python download_models.py --static --cade
+* **PPMI models**: python download_models.py --ppmi
+* **All**: python download_models.py --static --cade --ppmi
 
 
 
