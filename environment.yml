@@ -215,4 +215,5 @@ dependencies:
       - rsa==4.9
       - s3transfer==0.6.1
       - smart-open==1.10.0
+      -
 prefix: /Users/paulschmitt/miniforge3/envs/cs224n
