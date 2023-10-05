@@ -34,7 +34,7 @@ def download_ppmi_models(model_dict):
     if "ppmi-models" in model_dict:
         ppmi_download_data = model_dict.get("ppmi-models", [])
         if not os.path.exists("data"):
-            os.mkdir("model")
+            os.mkdir("data")
         if not os.path.exists("data/ppmi-matrices"):
             os.mkdir("data/ppmi-matrices")
         for data in ppmi_download_data:
