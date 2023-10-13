@@ -203,8 +203,10 @@ class PPMIModel:
         """Calculate the cosine similarity between two words in the embedding space."""
 
         if word1 not in self.vocab:
+            return 0
             raise ValueError(f"'{word1}' is not in the vocabulary.")
         if word2 not in self.vocab:
+            return 0
             raise ValueError(f"'{word2}' is not in the vocabulary.")
 
         vector1 = self.get_word_vector(word1)

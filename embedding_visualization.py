@@ -21,32 +21,32 @@ def plot_cosine_similarity_tppmi(target_word, test_words, tppmi_model, selected_
     if selected_months is None:
         selected_months = [f"{date.month:02d}" for date in tppmi_model.dates]
 
-    timesteps = [date.month for date in tppmi_model.dates if date.month in selected_months]
-
     try:
         cosine_similarities = {
             key: {
                 word: model.cosine_similarity(target_word, word) for word in words
             }
-            for key, model in tppmi_model.ppmi_models.items() if int(key) in selected_months
+            for key, model in tppmi_model.ppmi_models.items() if key in selected_months
         }
     except ValueError as e:
         print("All words need to be in the vocab of all timesteps.")
         print(e.args[0])
         return
 
-    similarity_values = {word: [cosine_similarities[str(t)][word] for t in timesteps] for word in words}
+    similarity_values = {word: [cosine_similarities[str(t)][word] for t in selected_months] for word in words}
 
-    timesteps = [str(timestep) for timestep in timesteps]
+    '''
+    print("Similarity Value")
+    print(similarity_values)'''
 
 
     # Plotting
     plt.figure(figsize=(10, 6))
     for word in words:
         if word == target_word:
-            plt.plot(timesteps, similarity_values[word], marker='o', label=word, color="red")
+            plt.plot(selected_months, similarity_values[word], marker='o', label=word, color="red")
         else:
-            plt.plot(timesteps, similarity_values[word], marker='o', label=word)
+            plt.plot(selected_months, similarity_values[word], marker='o', label=word)
 
     if event:
         plt.axvline(x=event, color='gray', linestyle='--', label=event_name)
@@ -178,7 +178,7 @@ def plot_temporal_changing_embedding(keyword, models, top_n=2, title="Word embed
     ]
 
     most_similar_list_for_plotting = [
-        [tupel[0] for tupel in model.wv.most_similar(keyword, topn=top_n)] + [
+        [tupel[0] + "_" + str(key).split("_")[1] for tupel in model.wv.most_similar(keyword, topn=top_n)] + [
             keyword + "_" + str(key).split("_")[1]]
         for key, model in models.items()
     ]

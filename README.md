@@ -9,13 +9,17 @@ separately on the corpus split at the given date. Alignment was enforced via the
 
 ## Setup
 
+
 ### Installation
 
-For the installation of the necessary packages you need to both install the dependencies specified in
-the environment.yml and the requirement.txt. To do so use the following commands in this order:
+To clone the repository to your local machine run:
 
-1. conda env create -f environment.yml
-2. pip install requirement.txt
+* git clone https://github.com/FlackoJodye1/temporal-word-embeddings.git
+
+For the installation of the necessary packages you need install the dependencies specified in
+the environment.yml. To do so use the following command:
+
+* conda env create -f environment.yml
 
 ### Download Models
 
