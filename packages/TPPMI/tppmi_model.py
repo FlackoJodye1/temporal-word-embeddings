@@ -86,22 +86,6 @@ class TPPMIModel:
         target_words = self._validate_selected_words(target_words)
         # Create an empty dictionary to store the TPPMI matrices
         tppmi_dict = dict(zip(target_words, [None] * len(target_words)))
-        '''
-        print("Selected Months")
-        print(selected_months)
-        print("Dates")
-        print(self.dates)
-        print("Months")
-        for date in self.dates:
-            print(date.month, end=' ')
-        print("\n-------------")
-
-        test_word = target_words[0]
-        print("Test")
-        for date in self.dates:
-            if date.month in selected_months:
-                print(f"{test_word}_{date.month:02d}")
-        print("###############################")'''
 
         for word in target_words:
             # create T x V matrix (shape of tppmi-matrix)

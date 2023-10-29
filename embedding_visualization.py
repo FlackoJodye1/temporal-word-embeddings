@@ -35,11 +35,6 @@ def plot_cosine_similarity_tppmi(target_word, test_words, tppmi_model, selected_
 
     similarity_values = {word: [cosine_similarities[str(t)][word] for t in selected_months] for word in words}
 
-    '''
-    print("Similarity Value")
-    print(similarity_values)'''
-
-
     # Plotting
     plt.figure(figsize=(10, 6))
     for word in words:
@@ -98,7 +93,24 @@ def plot_cosine_similarity(target_word, test_words, models, event=None, event_na
     plt.show()
 
 
-def plot_word_vectors_tppmi(word_vectors_dict):
+def plot_word_vectors(models, words, range=None):
+    list_embeddings = {f"{word}_{key.split('_')[1]}": model.wv.get_vector(word) for key, model
+                       in models.items() for word in words}
+
+    embeddings_matrix = np.array(list(list_embeddings.values()))
+
+    pca = PCA(n_components=2)
+    reduced_embeddings = pca.fit_transform(embeddings_matrix)
+
+    vectors = {word_model: reduced_embedding for word_model, reduced_embedding
+               in zip(list_embeddings.keys(), reduced_embeddings)}
+
+    plot_word_vectors_tppmi(vectors, range)
+
+
+def plot_word_vectors_tppmi(word_vectors_dict, range=None):
+    if range is None:
+        range = [-50, 50]
     unique_words = set([word.split("_")[0] for word in word_vectors_dict.keys()])
     color_map = px.colors.qualitative.Plotly  # Get a set of plotly colors
     word_color_dict = dict(zip(unique_words, color_map))
@@ -153,8 +165,8 @@ def plot_word_vectors_tppmi(word_vectors_dict):
 
     layout = dict(
         title="2D Visualization of Word Vectors",
-        xaxis=dict(title="PC1", range=[-50, 50]),
-        yaxis=dict(title="PC2", range=[-50, 50]),
+        xaxis=dict(title="PC1", range=range),
+        yaxis=dict(title="PC2", range=range),
         legend=dict(x=1.02, y=1.0)
     )
 
@@ -178,10 +190,10 @@ def plot_temporal_changing_embedding(keyword, models, top_n=2, title="Word embed
     ]
 
     most_similar_list_for_plotting = [
-        [tupel[0] + "_" + str(key).split("_")[1] for tupel in model.wv.most_similar(keyword, topn=top_n)] + [
+        [tupel[0] for tupel in model.wv.most_similar(keyword, topn=top_n)] + [
             keyword + "_" + str(key).split("_")[1]]
         for key, model in models.items()
-    ]
+    ]  # tupel[0] + "_" + str(key).split("_")[1]
 
     # merge them into a list for the viz-function
     word_list = [word for sublist in most_similar_list_for_plotting for word in sublist]
@@ -223,6 +235,11 @@ def plot_static_embedding(model, words, keyword, title="Words in the embedding s
         plot_with_plotly(vectors_2d, word_list, keyword, title=title, subtitle=subtitle)
     else:
         plot_with_matplotlib(vectors_2d, word_list, keyword, title=title, subtitle=subtitle)
+
+
+# ------------------------------------------------------------------------- #
+# ------------------------- Auxiliary functions --------------------------- #
+# ------------------------------------------------------------------------- #
 
 
 # ------------------ Variants of plotting ------------------ #
