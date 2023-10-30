@@ -7,6 +7,12 @@ To see the progress only the ***model-analysis.ipynb*** needs to be run.
 The models are already build and are stored in the /model directory. There are two models per event which are trained
 separately on the corpus split at the given date. Alignment was enforced via the compass.
 
+## Dataset(s)
+
+The datasets contain social-media posts from various platforms on the topic of education and focus mostly on the US.
+It was used for sentiment-analysis since each observation has a sentiment attribute attached to it.
+The recorded data spans 11 months, beginning on June 1, 2022, and ending on April 28, 2023.
+
 ## Setup
 
 
@@ -45,14 +51,22 @@ The models are then stored in the model folder, which is part of repo
 (no need to run it again)
 
 ### model-analysis.ipnyb
-Loading the models, probing them with keywords and creating visualization, which compare the embeddings before and after impactful events occured.
-(This is the only notebook that needs to run, since the models are already build)
+Loading the models, probing them with keywords and creating visualization, 
+which compare the embeddings before and after impactful events occured.
+The models are trained on a corpus that is split by month.
 
-## Impactful Events
+### model-analysis-quarterly.ipnyb
+Loading the models, probing them with keywords and creating visualization,
+which compare the embeddings before and after impactful events occured.
+The models are trained on a corpus that is split into 4 quarters (Jun-Aug, Sep-Nov, Dez-Feb, Mar-April).
 
-* Release of Brittney Grinner (08.12.2022)
+## Developments examined
+
 * Elon Musk Twitter aquisition (27.10.2022)
-* Attack on Paul Pelosi (28.10.2022)
-* Colorado Springs nightclub shooting. (19.11.2022)
+* Shootings in the US
+  * May: Uvalde Robb Elementary School shooting (May 24, 2022)
+  * November: Colorado Springs nightclub shooting (November 19, 2022)
+  * March: Nashville school shooting (March 27, 2023)
+* President(s) (Trump, Biden etc.)
 
 They are handpicked and one can clearly see the difference in the resulting embeddings of their keywords.

@@ -76,7 +76,7 @@ if __name__ == "__main__":
     # Add an argument for model selection
     parser.add_argument("--static", action="store_true", help="Download static Word2Vec model")
     parser.add_argument("--cade", action="store_true", help="Download Cade models")
-    parser.add_argument("--ppmi", action="store_true", help="Download PPMI models")  # Added this line
+    parser.add_argument("--ppmi", action="store_true", help="Download PPMI models")
 
     # Parse the command-line arguments
     args = parser.parse_args()
