@@ -32,7 +32,7 @@ def remove_infrequent_words(tokenized_corpus: list, min_freq: int) -> list:
 class PPMIModel:
     """Pointwise Mutual Information (PPMI) model for text data."""
 
-    def __init__(self, text_df, min_freq=0, ppmi_matrix=None, vocab=None):
+    def __init__(self, text_df, context_words, min_freq=0, ppmi_matrix=None):
         """Initialize the PPMIModel.
 
         Args:
@@ -41,16 +41,19 @@ class PPMIModel:
             ppmi_df (pd.DataFrame): Precomputed PPMI matrix DataFrame.
         """
         if text_df is not None:
+
             self._tokenized_corpus = self._process_and_tokenize(text_df, min_freq)
-            self.vocab = sorted(list(set(word for document in self._tokenized_corpus for word in document)))
+            self.context_words = context_words
+            self.vocab = set(word for document in self._tokenized_corpus for word in document)
             self._word2ind = self._create_word2ind()
+            self.context_word2ind = self.create_context_index()
 
             # Create PPMI-Matrix
-            row = np.zeros((1, len(self.vocab)))[0]  # V x 1
+            row = np.zeros((1, len(self.context_words)))[0]  # V x 1
             self.ppmi_matrix = np.array([row for _ in range(len(self.vocab))])  # V x V
             self._ppmi_matrix_exists = False
         elif ppmi_matrix is not None:
-            self.vocab = vocab
+            self.vocab = ppmi_matrix.index.values.tolist()
             self._word2ind = self._create_word2ind()
             self.ppmi_matrix = ppmi_matrix.toarray()
             self._ppmi_matrix_exists = True
@@ -71,19 +74,13 @@ class PPMIModel:
             :param ppmi_matrix:
         """
         return cls(None, 0, ppmi_matrix, vocab)
+    # def __init__(self, text_df, context_words, min_freq=0, ppmi_matrix=None):
 
     @classmethod
-    def construct_from_texts(cls, text_df: pd.DataFrame, min_freq=0):
+    def construct_from_texts(cls, text_df: pd.DataFrame, context_words, min_freq=0):
         """Construct PPMIModel from text DataFrame.
-
-        Args:
-            text_df (pd.DataFrame): DataFrame with 'text' column containing text data.
-            min_freq (int): Minimum frequency for retaining words.
-
-        Returns:
-            PPMIModel: Constructed PPMIModel instance.
         """
-        return cls(text_df, min_freq, None)
+        return cls(text_df, context_words, min_freq, None)
 
     def _process_and_tokenize(self, text_df: pd.DataFrame, min_freq=0) -> list:
         tokenizer = nltk.tokenize.TreebankWordTokenizer()
@@ -103,6 +100,15 @@ class PPMIModel:
 
         return word2ind
 
+    def create_context_index(self):
+        indices = np.arange(len(self.context_words))
+        word2ind = dict(zip(self.context_words, indices))
+
+        return word2ind
+
+    def old_create_context_index(self):
+        return {index: self._word2ind[word] for index, word in enumerate(self.context_words)}
+
     def _compute_co_occurrence_matrix(self, window_size=5) -> np.ndarray:
         """Compute the co-occurrence matrix.
 
@@ -112,28 +118,31 @@ class PPMIModel:
         Returns:
             np.ndarray: Co-occurrence matrix.
         """
-        row = np.zeros((1, self.get_vocabulary_size()))[0]  # V x 1
-        co_matrix = np.array([row for _ in range(self.get_vocabulary_size())])  # V x V
+        co_matrix = np.zeros((self.get_vocabulary_size(), len(self.context_words)), dtype=np.int32)
 
         for tokenized_text in self._tokenized_corpus:
             for index, center_word in enumerate(tokenized_text):
 
                 # Create Window
-                center_index = self._word2ind[center_word]
-                upper = index + window_size + 1 if index + window_size < len(tokenized_text) else (
-                        len(tokenized_text) - 1)
-                lower = index - window_size if index - window_size >= 0 else 0
+                center_index = self._word2ind.get(center_word, -1)
+                if center_index == -1:
+                    print("out of vocab")
+                    continue
+
+                upper = min(index + window_size + 1, len(tokenized_text))
+                lower = max(index - window_size, 0)
 
                 # Do the job
-                context_words = tokenized_text[lower:upper]
-                context_indices = [self._word2ind[context_word] for context_word in context_words]
+                context_words = tokenized_text[lower:index] + tokenized_text[index + 1:upper]
 
-                # Update Concurrence-Matrix
+                # Update Co-occurrence Matrix
+                context_indices = [self.context_word2ind.get(context_word, -1) for context_word in context_words]
                 for context_index in context_indices:
-                    # we now filter out the center word itself, bc it was previously added to context_words
-                    co_matrix[center_index, context_index] += 1 if center_index != context_index else 0
+                    if context_index != -1:
+                        co_matrix[center_index, context_index] += 1
 
         return co_matrix
+
 
     def compute_ppmi_matrix(self, window_size=5) -> np.ndarray:
         """Compute the Pointwise Mutual Information (PPMI) matrix.

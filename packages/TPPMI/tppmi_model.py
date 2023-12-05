@@ -146,6 +146,82 @@ class TPPMIModel:
             print("All words are contained in the vocabulary")
             return target_words
 
+    def calculate_absolute_drift(self, word: str) -> float:
+        """
+        Calculate the absolute drift of a word over all time steps, accounting for different vector lengths.
+
+        Args:
+            word (str): The word for which to calculate the drift.
+
+        Returns:
+            float: The absolute drift value for the given word.
+        """
+
+        if word not in self.vocab:
+            return 1000
+            # raise ValueError(f"Word '{word}' is not in the vocabulary.")
+
+        # Find the common vocabulary across all models
+        common_vocab = set.intersection(*[set(model.get_vocabulary()) for model in self.ppmi_models.values()])
+
+        if word not in common_vocab:
+            raise ValueError(f"Word '{word}' is not present in the common vocabulary across time steps.")
+
+        total_drift = 0.0
+
+        word_vectors = pd.DataFrame(index=[f"{word}_{date.month:02d}" for date in self.dates
+                                           ],
+                                    columns=self.vocab,
+                                    dtype=float).sort_index(axis=1)
+
+        # Iterate through each time step
+        for date in self.dates:
+            ppmi_vector = self.ppmi_models[f"{date.month:02d}"].get_word_vector(word)
+            word_vectors.loc[f"{word}_{date.month:02d}"] = ppmi_vector
+            word_vectors.fillna(0, inplace=True)
+
+        for i in range(len(self.dates)):
+            if i + 1 < len(self.dates):
+                date = self.dates[i]
+                next_date = self.dates[i+1]
+                month_key = f"{word}_{date.month:02d}"
+                next_month_key = f"{word}_{next_date.month:02d}"
+                drift = np.linalg.norm(word_vectors.loc[next_month_key] - word_vectors.loc[month_key])
+                total_drift += drift
+
+        return round(total_drift, 2)
+
+    def calculate_top_n_drift(self, top_n: int) -> dict:
+        """
+        Calculate the absolute drift for all words in the vocabulary and return the top_n words with the highest drift.
+
+        Args:
+            top_n (int): Number of top words to return based on their drift values.
+
+        Returns:
+            dict: A dictionary with the top_n words as keys and their corresponding absolute drift values as values, sorted in descending order of drift.
+        """
+
+        drift_values = {}
+
+        # Iterate over each word in the vocabulary and calculate its drift
+        for word in self.vocab:
+            try:
+                drift = self.calculate_absolute_drift(word)
+                drift_values[word] = drift
+            except ValueError as e:
+                continue
+
+
+
+        # Sort the drift values in ascending order and select the top_n
+        sorted_drift_values = dict(sorted(drift_values.items(), key=lambda item: item[1], reverse=False)[:top_n])
+
+        return sorted_drift_values
+
+
+
+
     def most_similar_words(self, target_word: str, top_n=5) -> dict:
         """
         Find the most similar words to a target word over different time intervals based on precomputed PPMI models.
