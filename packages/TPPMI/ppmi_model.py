@@ -32,7 +32,7 @@ def remove_infrequent_words(tokenized_corpus: list, min_freq: int) -> list:
 class PPMIModel:
     """Pointwise Mutual Information (PPMI) model for text data."""
 
-    def __init__(self, text_df, context_words, min_freq=0, ppmi_matrix=None):
+    def __init__(self, text_df, context_words, min_freq=0, ppmi_matrix=None, vocab=None):
         """Initialize the PPMIModel.
 
         Args:
@@ -53,8 +53,10 @@ class PPMIModel:
             self.ppmi_matrix = np.array([row for _ in range(len(self.vocab))])  # V x V
             self._ppmi_matrix_exists = False
         elif ppmi_matrix is not None:
-            self.vocab = ppmi_matrix.index.values.tolist()
+            self.vocab = vocab
             self._word2ind = self._create_word2ind()
+            self.context_words = context_words
+            self.context_word2ind = self.create_context_index()
             self.ppmi_matrix = ppmi_matrix.toarray()
             self._ppmi_matrix_exists = True
         else:
@@ -62,7 +64,7 @@ class PPMIModel:
                              "provided.")
 
     @classmethod
-    def construct_from_data(cls, ppmi_matrix: sp.csr_matrix, vocab: list):
+    def construct_from_data(cls, ppmi_matrix: sp.csr_matrix, vocab, context_words, min_freq=0):
         """Construct PPMIModel from precomputed PPMI matrix (DataFrame).
 
         Args:
@@ -70,17 +72,17 @@ class PPMIModel:
 
         Returns:
             PPMIModel: Constructed PPMIModel instance.
-            :param vocab:
+            :param vocab: vocabulary of the PMIModel instance.
             :param ppmi_matrix:
         """
-        return cls(None, 0, ppmi_matrix, vocab)
-    # def __init__(self, text_df, context_words, min_freq=0, ppmi_matrix=None):
+        return cls(None, context_words, min_freq, ppmi_matrix, vocab)
+        # def __init__(self, text_df, context_words, min_freq=0, ppmi_matrix=None, vocab = None):
 
     @classmethod
     def construct_from_texts(cls, text_df: pd.DataFrame, context_words, min_freq=0):
         """Construct PPMIModel from text DataFrame.
         """
-        return cls(text_df, context_words, min_freq, None)
+        return cls(text_df, context_words, min_freq, None, None)
 
     def _process_and_tokenize(self, text_df: pd.DataFrame, min_freq=0) -> list:
         tokenizer = nltk.tokenize.TreebankWordTokenizer()
@@ -143,7 +145,6 @@ class PPMIModel:
 
         return co_matrix
 
-
     def compute_ppmi_matrix(self, window_size=5) -> np.ndarray:
         """Compute the Pointwise Mutual Information (PPMI) matrix.
 
@@ -204,7 +205,7 @@ class PPMIModel:
         if word in self.vocab:
             word_index = self._word2ind[word]
             word_vector = self.ppmi_matrix[word_index]
-            return pd.Series(word_vector, index=self.vocab)
+            return pd.Series(word_vector, index=self.context_words)
         else:
             raise ValueError(f"'{word}' is not in the vocabulary.")
 
@@ -267,9 +268,12 @@ class PPMIModel:
         return pd.DataFrame(data=self.ppmi_matrix, columns=self.vocab, index=self.vocab)
 
     def save(self, month: str, path: Path):
+        # save vocab
         with open(path / f"ppmi-{month}-01.pkl", "wb") as f:
             pickle.dump(self.vocab, f)
+        # save ppmi-matrix
         sparse_ppmi_matrix = sp.csr_matrix(self.ppmi_matrix)
         sp.save_npz(path / f"ppmi-{month}-01.npz", sparse_ppmi_matrix)
+        # print confirmation-info
         print(f"PPMI data for {month} saved successfully.")
         print(f"Vocabulary Size: {self.get_vocabulary_size()}")
