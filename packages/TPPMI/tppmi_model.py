@@ -29,41 +29,11 @@ class TPPMIModel:
         """
         self.ppmi_models = ppmi_models
         self.dates = _convert_dates(list(ppmi_models.keys()))
+        # will throw error if ppmi-models do not have the same context-words
+        self.context_words = self._validate_alignment()
         self.vocab = sorted(list(set().union(*[model.get_vocabulary() for model in ppmi_models.values()])))
-        self._word2ind = self._create_word2ind()
-
-    def get_2d_representation(self, target_words: list, selected_months=None, use_tsne=False) -> dict:
-        """Get the 2D representation of TPPMI vectors.
-
-        Args:
-            use_tsne (bool): Use t-SNE for dimensionality reduction.
-
-        Returns:
-            dict: Dictionary with row names as keys and 2D vectors as values.
-            :param selected_months: list of selected subset of months to filter for.
-            :param use_tsne: true iff u want to use tsne, false for pca
-            :param target_words: list of words to get the tppmi vectors for
-        """
-
-        if selected_months is None:
-            selected_months = [date.month for date in self.dates]
-
-        tppmi_values = self.get_tppmi(target_words, selected_months=selected_months).values()
-
-        concatenated_matrix = pd.concat(tppmi_values,
-                                        axis=0, ignore_index=True)
-        concatenated_matrix.columns = concatenated_matrix.columns.astype(str)
-
-        if use_tsne:
-            tsne = TSNE(n_components=2)
-            vectors = tsne.fit_transform(concatenated_matrix)
-        else:
-            pca = PCA(n_components=2)
-            vectors = pca.fit_transform(concatenated_matrix)
-        # .month:02d
-        row_names = [f"{word}_{date}" for word in target_words for date in selected_months]
-
-        return {row_name: vector for row_name, vector in zip(row_names, vectors)}
+        self._vocab_word2ind = self._create_word_index(self.vocab)
+        self._context_word2ind = self._create_word_index(self.context_words)
 
     def get_tppmi(self, target_words: list, selected_months=None) -> dict:
         """
@@ -80,6 +50,7 @@ class TPPMIModel:
         the vocabulary for a specific time interval and fills missing values with zeros in the TPPMI matrices.
         :param selected_months: selected subset of months to filter for.
         """
+
         # Validate and filter the list of target words
         if selected_months is None:
             selected_months = [date.month for date in self.dates]
@@ -88,10 +59,10 @@ class TPPMIModel:
         tppmi_dict = dict(zip(target_words, [None] * len(target_words)))
 
         for word in target_words:
-            # create T x V matrix (shape of tppmi-matrix)
+            # create T x dim(embedding) matrix (shape of tppmi-matrix)
             word_vectors = pd.DataFrame(index=[f"{word}_{date.month:02d}" for date in self.dates
                                                if date.month in selected_months],
-                                        columns=self.vocab,
+                                        columns=self.context_words,
                                         dtype=float).sort_index(axis=1)
             # for each timestep
             for date in self.dates:
@@ -108,6 +79,39 @@ class TPPMIModel:
             tppmi_dict[word] = word_vectors.fillna(0)
 
         return tppmi_dict
+
+    def get_2d_representation(self, target_words: list, selected_months=None, use_tsne=False) -> dict:
+        """Get the 2D representation of TPPMI vectors.
+
+        Args:
+            use_tsne (bool): Use t-SNE for dimensionality reduction.
+
+        Returns:
+            dict: Dictionary with row names as keys and 2D vectors as values.
+            :param selected_months: list of selected subset of months to filter for.
+            :param use_tsne: true iff u want to use tsne, false for pca
+            :param target_words: list of words to get the tppmi vectors for
+        """
+
+        # Take all months of the model if none are selected
+        if selected_months is None:
+            selected_months = [date.month for date in self.dates]
+
+        tppmi_values = self.get_tppmi(target_words, selected_months=selected_months).values()
+
+        concatenated_matrix = pd.concat(tppmi_values,
+                                        axis=0, ignore_index=True)
+        concatenated_matrix.columns = concatenated_matrix.columns.astype(str)
+
+        if use_tsne:
+            tsne = TSNE(n_components=2)
+            vectors = tsne.fit_transform(concatenated_matrix)
+        else:
+            pca = PCA(n_components=2)
+            vectors = pca.fit_transform(concatenated_matrix)
+        row_names = [f"{word}_{date}" for word in target_words for date in selected_months]
+
+        return {row_name: vector for row_name, vector in zip(row_names, vectors)}
 
     # currently not usable
     def _smooth(self, target_words: list, tppmi_dict: dict):
@@ -127,24 +131,6 @@ class TPPMIModel:
 
                 # Update the tppmi_list with the smoothed values
                 tppmi_dict[target_word].loc[:, context_word] = spline_y
-
-    def _validate_selected_words(self, target_words: list) -> list:
-
-        if not isinstance(target_words, list):
-            raise TypeError("The 'target_words' argument must be a list.")
-
-        if len(set(target_words) & set(self.vocab)) < len(target_words):
-            common_words = list(set(self.vocab) & set(target_words))
-            if len(common_words) < 1:
-                raise ValueError("None of the selected words are in the PPMI matrices!")
-            else:
-                print("Not all selected words are in PPMI matrices.")
-                target_words = common_words
-                print("Words changed to:", ", ".join(target_words))
-                return target_words
-        else:
-            print("All words are contained in the vocabulary")
-            return target_words
 
     def calculate_absolute_drift(self, word: str) -> float:
         """
@@ -183,7 +169,7 @@ class TPPMIModel:
         for i in range(len(self.dates)):
             if i + 1 < len(self.dates):
                 date = self.dates[i]
-                next_date = self.dates[i+1]
+                next_date = self.dates[i + 1]
                 month_key = f"{word}_{date.month:02d}"
                 next_month_key = f"{word}_{next_date.month:02d}"
                 drift = np.linalg.norm(word_vectors.loc[next_month_key] - word_vectors.loc[month_key])
@@ -212,15 +198,10 @@ class TPPMIModel:
             except ValueError as e:
                 continue
 
-
-
-        # Sort the drift values in ascending order and select the top_n
-        sorted_drift_values = dict(sorted(drift_values.items(), key=lambda item: item[1], reverse=False)[:top_n])
+        # Sort the drift values in descending order and select the top_n
+        sorted_drift_values = dict(sorted(drift_values.items(), key=lambda item: item[1], reverse=True)[:top_n])
 
         return sorted_drift_values
-
-
-
 
     def most_similar_words(self, target_word: str, top_n=5) -> dict:
         """
@@ -272,16 +253,73 @@ class TPPMIModel:
                 print(f"{target_word} not in vocab")
             print("--------------------------------")
 
-    # Create indexed dictionary = vocabulary
-    def _create_word2ind(self) -> dict:
-        """Create a vocabulary index dictionary.
+    def _create_word_index(self, word_list: list) -> dict:
+        """
+        Create a dictionary to map each word in the given list to its index.
+
+        Args:
+            word_list (list): A list of words, either vocabulary or context words.
 
         Returns:
-            dict: Vocabulary word to index mapping.
+            dict: A dictionary mapping words to their respective indices.
         """
-        indices = np.arange(len(self.vocab))
-        word2ind = dict(zip(self.vocab, indices))
+        # Create an array of indices corresponding to the number of words in the given list
+        indices = np.arange(len(word_list))
+
+        # Create a dictionary that maps each word in the list to its corresponding index
+        word2ind = dict(zip(word_list, indices))
         return word2ind
+
+    # ----------------------------------------------------------- #
+    # ----------------------- Validators ------------------------ #
+    # ----------------------------------------------------------- #
+
+    def _validate_selected_words(self, target_words: list) -> list:
+
+        if not isinstance(target_words, list):
+            raise TypeError("The 'target_words' argument must be a list.")
+
+        if len(set(target_words) & set(self.vocab)) < len(target_words):
+            common_words = list(set(self.vocab) & set(target_words))
+            if len(common_words) < 1:
+                raise ValueError("None of the selected words are in the PPMI matrices!")
+            else:
+                print("Not all selected words are in PPMI matrices.")
+                target_words = common_words
+                print("Words changed to:", ", ".join(target_words))
+                return target_words
+        else:
+            print("All words are contained in the vocabulary")
+            return target_words
+
+    def _validate_alignment(self) -> list:
+        """
+        Check if all ppmi_models in the dictionary have the same context words and return those.
+
+        Raises:
+            ValueError: If not all models have the same context words.
+
+        Returns:
+            list: A list of context words from the first model if all models have the same context words.
+        """
+        if not self.ppmi_models:
+            raise ValueError("No PPMI models available for validation.")
+
+        # Extract the first model's context words and sort them
+        reference_context_words = sorted(next(iter(self.ppmi_models.values())).get_context_words())
+
+        # Iterate over the models in the dictionary
+        for model_key, ppmi_model in self.ppmi_models.items():
+            current_context_words = sorted(ppmi_model.get_context_words())
+            if current_context_words != reference_context_words:
+                raise ValueError(
+                    f"Context words mismatch found in model with key '{model_key}' compared to the first model.")
+
+        return reference_context_words
+
+    # ----------------------------------------------------------- #
+    # ------------------------ Getters -------------------------- #
+    # ----------------------------------------------------------- #
 
     def get_vocabulary(self) -> list:
         """Get the vocabulary of the model.
@@ -290,6 +328,14 @@ class TPPMIModel:
             list: List of vocabulary words.
         """
         return self.vocab
+
+    def get_embedding_dim(self) -> int:
+        """Get the embedding dimension of the model.
+
+        Returns:
+            int: Size of the embeddings.
+        """
+        return len(self.context_words)
 
     def get_vocabulary_size(self) -> int:
         """Get the size of the vocabulary.

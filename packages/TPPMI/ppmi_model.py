@@ -41,12 +41,11 @@ class PPMIModel:
             ppmi_df (pd.DataFrame): Precomputed PPMI matrix DataFrame.
         """
         if text_df is not None:
-
             self._tokenized_corpus = self._process_and_tokenize(text_df, min_freq)
             self.context_words = context_words
             self.vocab = set(word for document in self._tokenized_corpus for word in document)
-            self._word2ind = self._create_word2ind()
-            self.context_word2ind = self.create_context_index()
+            self._vocab_word2ind = self._create_word_index(vocab)
+            self._context_word2ind = self._create_word_index(context_words)
 
             # Create PPMI-Matrix
             row = np.zeros((1, len(self.context_words)))[0]  # V x 1
@@ -54,9 +53,10 @@ class PPMIModel:
             self._ppmi_matrix_exists = False
         elif ppmi_matrix is not None:
             self.vocab = vocab
-            self._word2ind = self._create_word2ind()
             self.context_words = context_words
-            self.context_word2ind = self.create_context_index()
+            self._vocab_word2ind = self._create_word_index(vocab)
+            self._context_word2ind = self._create_word_index(context_words)
+
             self.ppmi_matrix = ppmi_matrix.toarray()
             self._ppmi_matrix_exists = True
         else:
@@ -76,7 +76,6 @@ class PPMIModel:
             :param ppmi_matrix:
         """
         return cls(None, context_words, min_freq, ppmi_matrix, vocab)
-        # def __init__(self, text_df, context_words, min_freq=0, ppmi_matrix=None, vocab = None):
 
     @classmethod
     def construct_from_texts(cls, text_df: pd.DataFrame, context_words, min_freq=0):
@@ -96,20 +95,22 @@ class PPMIModel:
         tokenized_corpus = remove_infrequent_words(tokenized_corpus, min_freq)
         return tokenized_corpus
 
-    def _create_word2ind(self) -> dict:
-        indices = np.arange(len(self.vocab))
-        word2ind = dict(zip(self.vocab, indices))
+    def _create_word_index(self, word_list: list) -> dict:
+        """
+        Create a dictionary to map each word in the given list to its index.
 
+        Args:
+            word_list (list): A list of words, either vocabulary or context words.
+
+        Returns:
+            dict: A dictionary mapping words to their respective indices.
+        """
+        # Create an array of indices corresponding to the number of words in the given list
+        indices = np.arange(len(word_list))
+
+        # Create a dictionary that maps each word in the list to its corresponding index
+        word2ind = dict(zip(word_list, indices))
         return word2ind
-
-    def create_context_index(self):
-        indices = np.arange(len(self.context_words))
-        word2ind = dict(zip(self.context_words, indices))
-
-        return word2ind
-
-    def old_create_context_index(self):
-        return {index: self._word2ind[word] for index, word in enumerate(self.context_words)}
 
     def _compute_co_occurrence_matrix(self, window_size=5) -> np.ndarray:
         """Compute the co-occurrence matrix.
@@ -126,7 +127,7 @@ class PPMIModel:
             for index, center_word in enumerate(tokenized_text):
 
                 # Create Window
-                center_index = self._word2ind.get(center_word, -1)
+                center_index = self._vocab_word2ind.get(center_word, -1)
                 if center_index == -1:
                     print("out of vocab")
                     continue
@@ -138,18 +139,19 @@ class PPMIModel:
                 context_words = tokenized_text[lower:index] + tokenized_text[index + 1:upper]
 
                 # Update Co-occurrence Matrix
-                context_indices = [self.context_word2ind.get(context_word, -1) for context_word in context_words]
+                context_indices = [self._context_word2ind.get(context_word, -1) for context_word in context_words]
                 for context_index in context_indices:
                     if context_index != -1:
                         co_matrix[center_index, context_index] += 1
 
         return co_matrix
 
-    def compute_ppmi_matrix(self, window_size=5) -> np.ndarray:
-        """Compute the Pointwise Mutual Information (PPMI) matrix.
+    def compute_ppmi_matrix(self, window_size=5, epsilon=1e-10) -> np.ndarray:
+        """Compute the Pointwise Mutual Information (PPMI) matrix with improved handling of zero probabilities.
 
         Args:
             window_size (int): Size of the context window.
+            epsilon (float): Small constant to avoid division by zero and zero probabilities in log.
 
         Returns:
             np.ndarray: PPMI matrix.
@@ -157,23 +159,20 @@ class PPMIModel:
         if self._ppmi_matrix_exists:
             return self.ppmi_matrix
         else:
-            co_matrix = self._compute_co_occurrence_matrix(window_size)
+            co_matrix = self._compute_co_occurrence_matrix(window_size) + epsilon
 
-            # p(y|x) - calculate the probability of each context word given a center word
-            center_counts = co_matrix.sum(axis=1).astype(float)
+            # Calculate probabilities with smoothing
+            center_counts = co_matrix.sum(axis=1)
             prob_cols_given_row = (co_matrix.T / center_counts).T
 
-            # p(y) - calculate the probability of each context word in the total set
-            context_counts = co_matrix.sum(axis=0).astype(float)
-            prob_of_cols = context_counts / sum(context_counts)
+            context_counts = co_matrix.sum(axis=0)
+            prob_of_cols = context_counts / context_counts.sum()
 
-            # Calculate PMI: log( p(y|x) / p(y) )
+            # Calculate PMI with a safe log
             ratio = prob_cols_given_row / prob_of_cols
-            ratio[ratio == 0] = 0.00001  # Avoid logarithm of zero
-
-            pmi = np.log(ratio)
+            pmi = np.log(ratio.clip(min=epsilon))
             self._ppmi_matrix_exists = True
-            self.ppmi_matrix = np.maximum(pmi, 0)  # pmi -> ppmi
+            self.ppmi_matrix = np.maximum(pmi, 0)
             return self.ppmi_matrix
 
     def most_similar_words(self, target_word: str, top_n=5) -> list:
@@ -201,36 +200,66 @@ class PPMIModel:
         return similar_words
 
     def get_word_vector(self, word: str) -> pd.Series:
-        """Get the vector representation of a word in the embedding space as a pandas' series."""
+        """
+        Get the vector representation of a word in the embedding space as a pandas' series.
+
+        Args:
+            word (str): The word for which the vector representation is required.
+
+        Returns:
+            pd.Series: The vector representation of the word.
+
+        Raises:
+            ValueError: If the word is not in the vocabulary.
+        """
+        # Check if the word exists in the vocabulary
         if word in self.vocab:
-            word_index = self._word2ind[word]
+            # Retrieve the index of the word in the vocabulary
+            word_index = self._vocab_word2ind[word]
+
+            # Fetch the corresponding word vector from the PPMI matrix
             word_vector = self.ppmi_matrix[word_index]
+
+            # Convert the word vector into a pandas Series for easy handling,
+            # using the context words as the index
             return pd.Series(word_vector, index=self.context_words)
         else:
+            # If the word is not found in the vocabulary, raise an error
             raise ValueError(f"'{word}' is not in the vocabulary.")
 
     def cosine_similarity(self, word1: str, word2: str) -> float:
         """Calculate the cosine similarity between two words in the embedding space."""
 
         if word1 not in self.vocab:
-            return 0
             raise ValueError(f"'{word1}' is not in the vocabulary.")
         if word2 not in self.vocab:
-            return 0
             raise ValueError(f"'{word2}' is not in the vocabulary.")
 
         vector1 = self.get_word_vector(word1)
         vector2 = self.get_word_vector(word2)
 
+        if vector1 is None or vector2 is None:
+            # Handle missing vectors appropriately.
+            return 0.0
+
+        '''
+        vector1 = vector1.fillna(0)
+        vector2 = vector2.fillna(0)'''
+
         norm1 = np.linalg.norm(vector1)
         norm2 = np.linalg.norm(vector2)
-        dot_product = np.dot(vector1, vector2)
 
         if norm1 == 0 or norm2 == 0:
+            # Handle division by zero (sparse vectors)
             return 0
+
+        dot_product = np.dot(vector1, vector2)
 
         similarity = dot_product / (norm1 * norm2)
         return similarity
+
+    def get_context_words(self):
+        return self.context_words
 
     def get_vocabulary(self):
         """Get the vocabulary of the model.
@@ -257,6 +286,13 @@ class PPMIModel:
         return self.ppmi_matrix.shape
 
     def contains_in_vocab(self, word: str) -> bool:
+        """Check if a word is in the vocabulary.
+
+        Args:
+            word (str): The word to check for in the vocabulary.
+        Returns:
+            bool: True if the word is found in the vocabulary, False otherwise.
+        """
         return word in self.vocab
 
     def get_as_df(self) -> pd.DataFrame:
@@ -265,7 +301,7 @@ class PPMIModel:
         Returns:
             pd.DataFrame: PPMI matrix as a DataFrame.
         """
-        return pd.DataFrame(data=self.ppmi_matrix, columns=self.vocab, index=self.vocab)
+        return pd.DataFrame(data=self.ppmi_matrix, columns=self.context_words, index=self.vocab)
 
     def save(self, month: str, path: Path):
         # save vocab

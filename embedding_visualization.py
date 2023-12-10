@@ -13,7 +13,8 @@ from plotly.offline import init_notebook_mode, iplot, plot
 pio.templates.default = "plotly"
 
 
-def plot_cosine_similarity_tppmi(target_word, test_words, tppmi_model, selected_months=None, event=None, event_name=""):
+def plot_cosine_similarity_tppmi(target_word, test_words, tppmi_model, selected_months=None, event=None, event_name="",
+                                 y_upper=1.1):
     # used for plotting a baseline
     words = test_words.copy()
     words.insert(0, target_word)
@@ -50,7 +51,7 @@ def plot_cosine_similarity_tppmi(target_word, test_words, tppmi_model, selected_
     plt.ylabel('Cosine Similarity')
     plt.title(f'Cosine Similarity of "{target_word}" with selected Test-Words')
     plt.grid(True)
-    plt.ylim(0, 1.1)
+    plt.ylim(0, y_upper)
     plt.legend()
     plt.tight_layout()
     plt.show()
