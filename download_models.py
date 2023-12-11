@@ -31,6 +31,7 @@ def download_static_model(model_dict):
 
 
 def download_ppmi_models(model_dict):
+    identifier = "classic"  # just for now
     if "ppmi-models" in model_dict:
         ppmi_download_data = model_dict.get("ppmi-models", [])
         if not os.path.exists("data"):
@@ -41,8 +42,8 @@ def download_ppmi_models(model_dict):
             print(data)
             matrix_download_link = f"https://drive.google.com/uc?id={data['matrix_file_id']}"
             vocab_download_link = f"https://drive.google.com/uc?id={data['vocab_file_id']}"
-            matrix_destination_path = f"data/ppmi-matrices/{data['name']}.npz"
-            vocab_destination_path = f"data/ppmi-matrices/{data['name']}.pkl"
+            matrix_destination_path = f"data/ppmi-matrices/{identifier}/{data['name']}.npz"
+            vocab_destination_path = f"data/ppmi-matrices/{identifier}/{data['name']}.pkl"
             gdown.download(matrix_download_link, matrix_destination_path)
             gdown.download(vocab_download_link, vocab_destination_path)
     else:

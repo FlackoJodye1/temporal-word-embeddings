@@ -40,18 +40,18 @@ class PPMIModel:
             min_freq (int): Minimum frequency for retaining words.
             ppmi_df (pd.DataFrame): Precomputed PPMI matrix DataFrame.
         """
-        if text_df is not None:
+        if text_df is not None:  # class-method construct_from_texts() enters here
             self._tokenized_corpus = self._process_and_tokenize(text_df, min_freq)
             self.context_words = context_words
-            self.vocab = set(word for document in self._tokenized_corpus for word in document)
-            self._vocab_word2ind = self._create_word_index(vocab)
+            self.vocab = list(set(word for document in self._tokenized_corpus for word in document))
+            self._vocab_word2ind = self._create_word_index(self.vocab)
             self._context_word2ind = self._create_word_index(context_words)
 
             # Create PPMI-Matrix
             row = np.zeros((1, len(self.context_words)))[0]  # V x 1
             self.ppmi_matrix = np.array([row for _ in range(len(self.vocab))])  # V x V
             self._ppmi_matrix_exists = False
-        elif ppmi_matrix is not None:
+        elif ppmi_matrix is not None:  # class-method construct_from_data() enters here
             self.vocab = vocab
             self.context_words = context_words
             self._vocab_word2ind = self._create_word_index(vocab)
@@ -82,6 +82,8 @@ class PPMIModel:
         """Construct PPMIModel from text DataFrame.
         """
         return cls(text_df, context_words, min_freq, None, None)
+
+    # def __init__(self, text_df, context_words, min_freq=0, ppmi_matrix=None, vocab=None):
 
     def _process_and_tokenize(self, text_df: pd.DataFrame, min_freq=0) -> list:
         tokenizer = nltk.tokenize.TreebankWordTokenizer()
@@ -229,7 +231,8 @@ class PPMIModel:
 
     def cosine_similarity(self, word1: str, word2: str) -> float:
         """Calculate the cosine similarity between two words in the embedding space."""
-
+        if word1 not in self.vocab or word2 not in self.vocab:
+            return 0
         if word1 not in self.vocab:
             raise ValueError(f"'{word1}' is not in the vocabulary.")
         if word2 not in self.vocab:

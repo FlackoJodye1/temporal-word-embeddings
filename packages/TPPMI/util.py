@@ -1,25 +1,21 @@
 import pickle
 from glob import glob
-from pathlib import Path
-
-import pandas as pd
-from typing import List
-from collections import Counter
-
-import nltk
 import scipy.sparse as sp
+
+from pathlib import Path
+from collections import Counter
 from nltk.corpus import stopwords
 
-from ppmi_model import PPMIModel # packages.TPPMI.
-from tppmi_model import TPPMIModel # packages.TPPMI.
+from packages.TPPMI.ppmi_model import PPMIModel
+from packages.TPPMI.tppmi_model import TPPMIModel
 
-def contruct_tppmi_from_files(path):
 
+def construct_tppmi_from_files(path):
     number_of_context_words = 500
     ppmi_path = Path(path)
 
-    ppmi_data_files = sorted(glob(str(ppmi_path  / "*.npz")))
-    words_files = sorted(glob(str(ppmi_path  / "*.pkl")))
+    ppmi_data_files = sorted(glob(str(ppmi_path / "*.npz")))
+    words_files = sorted(glob(str(ppmi_path / "*.pkl")))
 
     # Split context-words from timestamped-vocabularies
     context_words_file = [path for path in words_files if "context-words" in path]
@@ -33,7 +29,7 @@ def contruct_tppmi_from_files(path):
         with open(filenames[0], "rb") as f:
             vocab = pickle.load(f)
         key = filenames[0].split("ppmi-")[2][0:2]
-        ppmi_matrices[key] = {"ppmi_matrix" : ppmi_matrix, "vocab": vocab}
+        ppmi_matrices[key] = {"ppmi_matrix": ppmi_matrix, "vocab": vocab}
 
     # Get common context-words
     with open(context_words_file[0], "rb") as f:
@@ -48,6 +44,7 @@ def contruct_tppmi_from_files(path):
 
     return TPPMIModel(ppmi_models)
 
+
 def get_most_common_words(corpus: str, top_n: int, remove_stopwords: bool = False):
     """
     Extract the most common words from a specified column in a pandas dataframe.
@@ -55,6 +52,9 @@ def get_most_common_words(corpus: str, top_n: int, remove_stopwords: bool = Fals
     :param corpus: a string containing the whole corpus.
     :param top_n: Number of top common words to return.
     :return: A list of the most common top_n words.
+
+    Args:
+        remove_stopwords: true, if stopword-removal is to be performed
     """
 
     # Split the string into words and create a counter object
