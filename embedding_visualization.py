@@ -1,5 +1,6 @@
 import random
 import numpy as np
+from pprint import pprint
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -238,6 +239,30 @@ def plot_static_embedding(model, words, keyword, title="Words in the embedding s
         plot_with_matplotlib(vectors_2d, word_list, keyword, title=title, subtitle=subtitle)
 
 
+def print_most_similar_cade(models, target_word, top_n=3):
+    """
+    Print the top N most similar words to a given target word across different models.
+
+    :param models: A dictionary of models with keys as model identifiers.
+    :param target_word: The word for which similar words are to be found.
+    :param top_n: Number of top similar words to return. Defaults to 3.
+    """
+
+    if not isinstance(models, dict):
+        raise ValueError("Models should be a dictionary")
+
+    print(f"Word: {target_word}")
+    for model_name, model in models.items():
+        month = model_name.split('_')[1].capitalize()
+        try:
+            similar_words = model.wv.most_similar(target_word, topn=top_n)
+            print(f"Month: {month}")
+            pprint(similar_words)
+        except KeyError:
+            print(f"Month: {month}\n{target_word} not in vocab")
+        print("--------------------------------")
+
+
 # ------------------------------------------------------------------------- #
 # ------------------------- Auxiliary functions --------------------------- #
 # ------------------------------------------------------------------------- #
@@ -350,18 +375,3 @@ def perform_tsne(model, words):
     tsne_vectors = scaler.fit_transform(tsne_vectors)
 
     return tsne_vectors
-
-
-# currently not used
-def sample_from_most_similar(model_pre, model_post, keyword, sample_size=6):
-    # we only calculate the 100 most similar words
-    sample_size = min(20, sample_size)
-
-    similar_words_pre = model_pre.wv.most_similar(keyword, topn=20)
-    similar_words_post = model_post.wv.most_similar(keyword, topn=20)
-
-    sampled_words_pre = random.sample(similar_words_pre, sample_size // 2)
-    sampled_words_post = random.sample(similar_words_post, sample_size // 2)
-    sampled_words = sampled_words_pre + sampled_words_post
-
-    return [key for key, _ in sampled_words]

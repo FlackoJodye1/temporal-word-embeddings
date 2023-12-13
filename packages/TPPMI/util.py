@@ -7,8 +7,8 @@ import scipy.sparse as sp
 from collections import Counter
 from nltk.corpus import stopwords
 
-from ppmi_model import PPMIModel
-from tppmi_model import TPPMIModel
+from packages.TPPMI.ppmi_model import PPMIModel
+from packages.TPPMI.tppmi_model import TPPMIModel
 
 
 def construct_tppmi_from_files(path):
