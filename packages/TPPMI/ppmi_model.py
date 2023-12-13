@@ -40,7 +40,7 @@ class PPMIModel:
             min_freq (int): Minimum frequency for retaining words.
             ppmi_df (pd.DataFrame): Precomputed PPMI matrix DataFrame.
         """
-        if text_df is not None:  # class-method construct_from_texts() enters here
+        if text_df is not None:  # @classmethod construct_from_texts() enters here
             self._tokenized_corpus = self._process_and_tokenize(text_df, min_freq)
             self.context_words = context_words
             self.vocab = list(set(word for document in self._tokenized_corpus for word in document))
@@ -48,10 +48,10 @@ class PPMIModel:
             self._context_word2ind = self._create_word_index(context_words)
 
             # Create PPMI-Matrix
-            row = np.zeros((1, len(self.context_words)))[0]  # V x 1
-            self.ppmi_matrix = np.array([row for _ in range(len(self.vocab))])  # V x V
+            row = np.zeros((1, len(self.context_words)))[0]  # dim(embedding) x 1
+            self.ppmi_matrix = np.array([row for _ in range(len(self.vocab))])  # dim(embedding) x V
             self._ppmi_matrix_exists = False
-        elif ppmi_matrix is not None:  # class-method construct_from_data() enters here
+        elif ppmi_matrix is not None:  # @classmethod construct_from_data() enters here
             self.vocab = vocab
             self.context_words = context_words
             self._vocab_word2ind = self._create_word_index(vocab)
