@@ -7,12 +7,11 @@ import scipy.sparse as sp
 from collections import Counter
 from nltk.corpus import stopwords
 
-from packages.TPPMI.ppmi_model import PPMIModel
-from packages.TPPMI.tppmi_model import TPPMIModel
+from ppmi_model import PPMIModel
+from tppmi_model import TPPMIModel
 
 
 def construct_tppmi_from_files(path):
-    number_of_context_words = 500
     ppmi_path = Path(path)
 
     ppmi_data_files = sorted(glob(str(ppmi_path / "*.npz")))

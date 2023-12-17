@@ -14,6 +14,8 @@ from plotly.offline import init_notebook_mode, iplot, plot
 pio.templates.default = "plotly"
 
 
+# ------------------ Cosine plotting ------------------ #
+
 def plot_cosine_similarity_tppmi(target_word, test_words, tppmi_model, selected_months=None, event=None, event_name="",
                                  y_upper=1.1):
     # used for plotting a baseline
@@ -58,7 +60,7 @@ def plot_cosine_similarity_tppmi(target_word, test_words, tppmi_model, selected_
     plt.show()
 
 
-def plot_cosine_similarity(target_word, test_words, models, event=None, event_name=""):
+def plot_cosine_similarity_cade(target_word, test_words, models, event=None, event_name=""):
     # used for plotting a baseline
     words = test_words.copy()
     words.insert(0, target_word)
@@ -94,6 +96,8 @@ def plot_cosine_similarity(target_word, test_words, models, event=None, event_na
     plt.tight_layout()
     plt.show()
 
+
+# ------------------ 2D plotting ------------------ #
 
 def plot_word_vectors(models, words, range=None):
     list_embeddings = {f"{word}_{key.split('_')[1]}": model.wv.get_vector(word) for key, model
@@ -180,8 +184,8 @@ def plot_word_vectors_tppmi(word_vectors_dict, range=None):
     iplot(fig, filename='word-embedding-plot')
 
 
-def plot_temporal_changing_embedding(keyword, models, top_n=2, title="Word embeddings", subtitle="", use_tsne=False,
-                                     use_plotly=True):
+def plot_word_vectors_cade(models, keyword, top_n=2, title="Word embeddings", subtitle="", use_tsne=False,
+                                     use_plotly=True, range=None):
     """ 2D visualization of word-embeddings.
     Function can use either pca or tsne to reduce dimensions of the word vectors.
     Function can either use matplotlib or plotly for plotting"""
@@ -195,7 +199,7 @@ def plot_temporal_changing_embedding(keyword, models, top_n=2, title="Word embed
         [tupel[0] for tupel in model.wv.most_similar(keyword, topn=top_n)] + [
             keyword + "_" + str(key).split("_")[1]]
         for key, model in models.items()
-    ]  # tupel[0] + "_" + str(key).split("_")[1]
+    ]
 
     # merge them into a list for the viz-function
     word_list = [word for sublist in most_similar_list_for_plotting for word in sublist]
@@ -268,7 +272,7 @@ def print_most_similar_cade(models, target_word, top_n=3):
 # ------------------------------------------------------------------------- #
 
 
-# ------------------ Variants of plotting ------------------ #
+# ------------------ Methods for plotting ------------------ #
 
 def plot_with_plotly(vectors, labels, keyword, title="Words in the embedding space", subtitle=None,
                      plot_in_notebook=True):
@@ -348,7 +352,7 @@ def plot_with_matplotlib(vectors, labels, keyword, title="Words in the embedding
         plt.title(subtitle, fontsize=10)
 
 
-# ------------ Variants of dimension reduction ------------ #
+# ------------ Methods of dimensionality reduction ------------ #
 
 def perform_pca(model, words):
     # Convert the word vectors of the specified words into a NumPy array
