@@ -30,13 +30,11 @@ the environment.yml. To do so use the following command:
 ### Download Models
 
 The Models are stored outside the repository on my personal Google Drive.
-The sharable links are stored in the drive-urls.json. To download the models one has to run the download_models.py
-script, parameters allows one to specify which models should be downloaded.
+To download them, you need to run the download_models.py script from the root directory of the project.
+This will create 2 directories (data & model) with everything necessary in it, to run the notebooks.
+(Can take up to 10 minutes)
 
-* **Static Word2Vec model**: python download_models.py --static
-* **Cade models**: python download_models.py --cade
-* **PPMI models**: python download_models.py --ppmi
-* **All**: python download_models.py --static --cade --ppmi
+* python download_models.py
 
 ## Files
 
@@ -50,15 +48,26 @@ Loading the data from the csv files, analysing the data and creating the models/
 The models are then stored in the model folder, which is part of repo
 (no need to run it again)
 
-### model-analysis.ipnyb
+### model-analysis.ipynb
 Loading the models, probing them with keywords and creating visualization, 
 which compare the embeddings before and after impactful events occured.
 The models are trained on a corpus that is split by month.
 
-### model-analysis-quarterly.ipnyb
+### model-analysis-quarterly.ipynb
 Loading the models, probing them with keywords and creating visualization,
 which compare the embeddings before and after impactful events occured.
 The models are trained on a corpus that is split into 4 quarters (Jun-Aug, Sep-Nov, Dez-Feb, Mar-April).
+
+### tppmi_sensititvity_analysis.ipynb
+
+Evaluates TPPMI-Models based on the variation in the number of context-words they use, 
+which fundamentally represents their embedding dimension.
+The context-words are randomly sampled from the most-common words in the corpus.
+In the models that utilize 200, 500, and 1000 context-words, 
+I select samples from the top 2000 most frequent words. Meanwhile, 
+for the model with 5000 context-words, the sampling is done from the 10,000 most commonly used words.
+
+* Tested Numbers of dimensions: 200, 500, 1000, 5000 
 
 ## Developments examined
 
