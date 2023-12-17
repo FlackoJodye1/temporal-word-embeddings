@@ -99,7 +99,7 @@ def plot_cosine_similarity_cade(target_word, test_words, models, event=None, eve
 
 # ------------------ 2D plotting ------------------ #
 
-def plot_word_vectors(models, words, range=None):
+def plot_word_vectors_cade(models, words, range=None):
     list_embeddings = {f"{word}_{key.split('_')[1]}": model.wv.get_vector(word) for key, model
                        in models.items() for word in words}
 
@@ -111,10 +111,14 @@ def plot_word_vectors(models, words, range=None):
     vectors = {word_model: reduced_embedding for word_model, reduced_embedding
                in zip(list_embeddings.keys(), reduced_embeddings)}
 
-    plot_word_vectors_tppmi(vectors, range)
+    plot_word_vectors(vectors, range)
 
 
 def plot_word_vectors_tppmi(word_vectors_dict, range=None):
+    plot_word_vectors(word_vectors_dict, range=range)
+
+
+def plot_word_vectors(word_vectors_dict, range=None):
     if range is None:
         range = [-50, 50]
     unique_words = set([word.split("_")[0] for word in word_vectors_dict.keys()])
