@@ -13,5 +13,4 @@ data/ppmi-matrices/
 packages/DynamicWord2Vec2/
 packages/Word2VecCustom/
 packages/TPPMI/__pycache__/
-model-analysis-quarterly.ipynb
 remove-git

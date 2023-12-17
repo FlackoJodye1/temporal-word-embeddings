@@ -184,7 +184,7 @@ def plot_word_vectors_tppmi(word_vectors_dict, range=None):
     iplot(fig, filename='word-embedding-plot')
 
 
-def plot_word_vectors_cade(models, keyword, top_n=2, title="Word embeddings", subtitle="", use_tsne=False,
+def plot_temporal_changing_embedding(models, keyword, top_n=2, title="Word embeddings", subtitle="", use_tsne=False,
                                      use_plotly=True, range=None):
     """ 2D visualization of word-embeddings.
     Function can use either pca or tsne to reduce dimensions of the word vectors.
