@@ -13,8 +13,8 @@ def _convert_dates(dates: list):
     # Sort the list of months based on the custom order
     sorted_dates = sorted(dates, key=lambda month: custom_month_order.index(int(month)))
 
-    # Create date objects with year 2022 for the sorted months
-    return [date(2022, int(month), 1) for month in sorted_dates]
+    # Adjust year based on the month, considering the year transition
+    return [date(2023 if int(month) <= 5 else 2022, int(month), 1) for month in sorted_dates]
 
 
 class TPPMIModel:
@@ -35,7 +35,7 @@ class TPPMIModel:
         self._vocab_word2ind = self._create_word_index(self.vocab)
         self._context_word2ind = self._create_word_index(self.context_words)
 
-    def get_tppmi(self, target_words: list, selected_months=None) -> dict:
+    def get_tppmi(self, target_words: list, selected_months=None, smooth=False) -> dict:
         """
         Calculate Time-Pointwise Mutual Information (TPPMI) matrices for a list of target words over time intervals.
 
@@ -78,6 +78,9 @@ class TPPMIModel:
             # Fill missing values (NaN) with zeros in the TPPMI matrix
             tppmi_dict[word] = word_vectors.fillna(0)
 
+        if smooth:
+            self._smooth(target_words, tppmi_dict)
+
         return tppmi_dict
 
     def get_2d_representation(self, target_words: list, selected_months=None, use_tsne=False) -> dict:
@@ -113,24 +116,29 @@ class TPPMIModel:
 
         return {row_name: vector for row_name, vector in zip(row_names, vectors)}
 
-    # currently not usable
     def _smooth(self, target_words: list, tppmi_dict: dict):
-
-        numdates = len(self.dates)
+        # Convert dates to a numeric scale (e.g., days since the first date)
+        num_dates = np.array([(date - self.dates[0]).days for date in self.dates])
 
         for target_word in target_words:
-            for i, context_word in enumerate(self.vocab):
-                y = tppmi_dict[target_word].loc[:, context_word]
-                numdates_sub = self.dates
+            # Retrieve the TPPMI dataframe for the current target word
+            tppmi_df = tppmi_dict[target_word]
 
-                # Fit a cubic spline to the data
-                spline = CubicSpline(numdates_sub[~np.isnan(y)], y[~np.isnan(y)], bc_type='natural')
+            for context_word in self.context_words:
+                # Extract the TPPMI values for the current context word across all dates
+                y = tppmi_df[context_word].values
 
-                # Evaluate the spline at all numdates_sub values
-                spline_y = spline(numdates_sub)
+                # Indices of non-NaN values
+                valid_indices = np.where(~np.isnan(y))[0]
 
-                # Update the tppmi_list with the smoothed values
-                tppmi_dict[target_word].loc[:, context_word] = spline_y
+                # Create a cubic spline only for non-NaN values
+                spline = CubicSpline(num_dates[valid_indices], y[valid_indices])
+
+                # Evaluate the spline across all dates to fill in NaN values with smoothed ones
+                smoothed_values = spline(num_dates)
+
+                # Update the TPPMI matrix with the smoothed values
+                tppmi_dict[target_word][context_word] = smoothed_values
 
     def calculate_absolute_drift(self, word: str) -> float:
         """
@@ -328,6 +336,15 @@ class TPPMIModel:
             list: List of vocabulary words.
         """
         return self.vocab
+
+    def get_context_words(self) -> list:
+        """Get the context-words of the model.
+           The context-words are the columns of the ppmi-models
+
+        Returns:
+            list: List of context words.
+        """
+        return self.context_words
 
     def get_embedding_dim(self) -> int:
         """Get the embedding dimension of the model.

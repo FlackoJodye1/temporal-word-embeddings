@@ -1,6 +1,8 @@
 import random
 import numpy as np
 from pprint import pprint
+
+import pandas as pd
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -99,22 +101,40 @@ def plot_cosine_similarity_cade(target_word, test_words, models, event=None, eve
 
 # ------------------ 2D plotting ------------------ #
 
-def plot_word_vectors_cade(models, words, range=None):
-    list_embeddings = {f"{word}_{key.split('_')[1]}": model.wv.get_vector(word) for key, model
+def plot_word_vectors_cade(models, words, perplexity=3, range=None, use_tsne=False):
+    embeddings_list = {f"{word}_{key.split('_')[1]}": model.wv.get_vector(word) for key, model
                        in models.items() for word in words}
 
-    embeddings_matrix = np.array(list(list_embeddings.values()))
+    embeddings_matrix = np.array(list(embeddings_list.values()))
 
-    pca = PCA(n_components=2)
-    reduced_embeddings = pca.fit_transform(embeddings_matrix)
+    if use_tsne:
+        embeddings_reduced = perform_tsne(embeddings_matrix, perplexity)
+    else:
+        embeddings_reduced = PCA(n_components=2).fit_transform(embeddings_matrix)
 
-    vectors = {word_model: reduced_embedding for word_model, reduced_embedding
-               in zip(list_embeddings.keys(), reduced_embeddings)}
+    word_vectors_dict = {word: reduced_embedding for word, reduced_embedding
+                         in zip(embeddings_list.keys(), embeddings_reduced)}
 
-    plot_word_vectors(vectors, range)
+    plot_word_vectors(word_vectors_dict, range=range)
 
 
-def plot_word_vectors_tppmi(word_vectors_dict, range=None):
+def plot_word_vectors_tppmi(model, words, range=None, use_tsne=False, perplexity=3):
+
+    embeddings_list = list(model.get_tppmi(words).values())
+
+    concatenated_df = pd.concat(embeddings_list, ignore_index=False)
+
+    embeddings_matrix = np.array(embeddings_list)
+    embeddings_matrix = embeddings_matrix.reshape(-1, embeddings_matrix.shape[-1])
+
+    if use_tsne:
+        embeddings_reduced = perform_tsne(embeddings_matrix, perplexity)
+    else:
+        embeddings_reduced = PCA(n_components=2).fit_transform(embeddings_matrix)
+
+    word_vectors_dict = {word: reduced_embedding for word, reduced_embedding
+                         in zip(concatenated_df.index, embeddings_reduced)}
+
     plot_word_vectors(word_vectors_dict, range=range)
 
 
@@ -368,18 +388,17 @@ def perform_pca(model, words):
     return PCA().fit_transform(word_vectors)[:, :2]
 
 
-def perform_tsne(model, words):
-    # Convert the word vectors of the specified words into a NumPy array
-    word_vectors = np.array([model[w] for w in words])
+def perform_tsne(embedding_matrix, perplexity):
+    PERPLEXITY = perplexity
 
-    # perplexity must not exceed the number of samples
-    perplexity = 2
+    # Initialize t-SNE with the specified perplexity and random state
+    tsne = TSNE(n_components=2, perplexity=PERPLEXITY, random_state=1040)
 
-    # 1. Apply t-SNE with 2 components, using perplexity adjusted based on the number of words
-    # 2. Perform the t-SNE transformation on the word vectors
-    tsne_vectors = TSNE(n_components=2, perplexity=perplexity, random_state=1040).fit_transform(word_vectors)
+    # Fit and transform the target_word_vectors using t-SNE
+    tsne_vectors = tsne.fit_transform(embedding_matrix)
+
     # Fit the scaler on t-SNE vectors
     scaler = StandardScaler()
-    tsne_vectors = scaler.fit_transform(tsne_vectors)
+    tsne_vectors_scaled = scaler.fit_transform(tsne_vectors)
 
-    return tsne_vectors
+    return tsne_vectors_scaled
