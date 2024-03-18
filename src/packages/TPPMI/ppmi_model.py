@@ -229,6 +229,40 @@ class PPMIModel:
             # If the word is not found in the vocabulary, raise an error
             raise ValueError(f"'{word}' is not in the vocabulary.")
 
+    def most_similar_words_by_vector(self, vector: np.ndarray, top_n=5) -> list:
+        """Get the n most similar words to a given vector based on cosine similarity.
+
+        Args:
+            vector (np.ndarray): The target vector.
+            top_n (int): Number of similar words to retrieve.
+
+        Returns:
+            list: List of tuples containing (similar_word, cosine_similarity_score).
+        """
+        if not isinstance(vector, np.ndarray):
+            raise ValueError("Input must be a numpy array.")
+
+        similarities = []
+
+        for word in self.vocab:
+            word_vector = self.get_word_vector(word).values  # Ensure we're working with np.ndarray
+            similarity = self._cosine_similarity_vectors(vector, word_vector)
+            similarities.append((word, similarity))
+
+        # Sort by similarity score in descending order and get the top n results
+        most_similar = sorted(similarities, key=lambda x: x[1], reverse=True)[:top_n]
+        return most_similar
+
+    def _cosine_similarity_vectors(self, vec1: np.ndarray, vec2: np.ndarray) -> float:
+        """Calculate the cosine similarity between two vectors."""
+        norm1 = np.linalg.norm(vec1)
+        norm2 = np.linalg.norm(vec2)
+        if norm1 == 0 or norm2 == 0:
+            return 0
+        dot_product = np.dot(vec1, vec2)
+        similarity = dot_product / (norm1 * norm2)
+        return similarity
+
     def cosine_similarity(self, word1: str, word2: str) -> float:
         """Calculate the cosine similarity between two words in the embedding space."""
         if word1 not in self.vocab or word2 not in self.vocab:

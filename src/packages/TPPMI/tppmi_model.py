@@ -30,8 +30,10 @@ class TPPMIModel:
         self.ppmi_models = ppmi_models
         if dates == "months":
             self.dates = _convert_dates(list(ppmi_models.keys()))
+            self.is_in_months = True
         else:
             self.dates = list(ppmi_models.keys())
+            self.is_in_months = False
         # will throw error if ppmi-models do not have the same context-words
         self.context_words = self._validate_alignment()
         self.vocab = sorted(list(set().union(*[model.get_vocabulary() for model in ppmi_models.values()])))
@@ -56,28 +58,46 @@ class TPPMIModel:
 
         # Validate and filter the list of target words
         if selected_months is None:
-            selected_months = [date.month for date in self.dates]
+            if self.is_in_months:
+                selected_months = [date.month for date in self.dates]
+            else:
+                selected_months = self.dates
         target_words = self._validate_selected_words(target_words)
         # Create an empty dictionary to store the TPPMI matrices
         tppmi_dict = dict(zip(target_words, [None] * len(target_words)))
 
         for word in target_words:
             # create T x dim(embedding) matrix (shape of tppmi-matrix)
-            word_vectors = pd.DataFrame(index=[f"{word}_{date.month:02d}" for date in self.dates
-                                               if date.month in selected_months],
+
+            if self.is_in_months:
+                index = [f"{word}_{date.month:02d}" for date in self.dates
+                         if date.month in selected_months]
+            else:
+                index = [f"{word}_{date}" for date in self.dates
+                         if date in selected_months]
+
+            word_vectors = pd.DataFrame(index=index,
                                         columns=self.context_words,
                                         dtype=float).sort_index(axis=1)
             # for each timestep
             for date in self.dates:
-                if date.month in selected_months:
+
+                if self.is_in_months:
+                    condition = date.month in selected_months
+                    key = f"{date.month:02d}"
+                else:
+                    condition = date in selected_months
+                    key = date
+
+                if condition:
                     # see which words from the vocab are present in this timestep
-                    current_vocab = self.ppmi_models[f"{date.month:02d}"].get_vocabulary()
+                    current_vocab = self.ppmi_models[key].get_vocabulary()
                     if word in current_vocab:
                         # Extract ppmi-vector for work k of timestep i
-                        ppmi_vector = self.ppmi_models[f"{date.month:02d}"].get_word_vector(word)
-                        word_vectors.loc[f"{word}_{date.month:02d}"] = ppmi_vector
+                        ppmi_vector = self.ppmi_models[key].get_word_vector(word)
+                        word_vectors.loc[f"{word}_{key}"] = ppmi_vector
                     else:
-                        print(f"{word} - not in vocab of timestep: {date.month:02d}")
+                        print(f"{word} - not in vocab of timestep: " + key)
             # Fill missing values (NaN) with zeros in the TPPMI matrix
             tppmi_dict[word] = word_vectors.fillna(0)
 
@@ -213,6 +233,26 @@ class TPPMIModel:
         sorted_drift_values = dict(sorted(drift_values.items(), key=lambda item: item[1], reverse=True)[:top_n])
 
         return sorted_drift_values
+
+    def most_similar_words_by_vector(self, target_vector: np.ndarray, top_n=10) -> dict:
+        """
+       Finds and returns the most similar words to a given target vector across different PPMI models.
+
+       Parameters:
+       - target_vector (np.ndarray): The vector representation of the target word whose similar words are to be found.
+       - top_n (int, optional): The number of top similar words to return for each PPMI model. Defaults to 10.
+
+       Returns:
+       dict: A dictionary where each key is a date corresponding to a specific PPMI model, and each value is a list
+             of tuples containing the top_n most similar words to the target vector and their respective similarity scores.
+       """
+
+        similar_words = {}
+
+        for date, model in self.ppmi_models.items():
+            similar_words[date] = model.most_similar_words_by_vector(target_vector, top_n)
+
+        return similar_words
 
     def most_similar_words(self, target_word: str, top_n=5) -> dict:
         """
@@ -364,3 +404,31 @@ class TPPMIModel:
             int: Size of the vocabulary.
         """
         return len(self.vocab)
+
+    def is_in_vocab_of_timestep(self, word: str, timestep: str) -> bool:
+        model = self.ppmi_models[timestep]
+        return model.contains_in_vocab(word)
+
+    def is_in_vocab(self, word: str) -> bool:
+        """
+        Checks if the given word is present in the intersection of the vocabularies of all PPMI models.
+
+        This method determines if a word is common across all the Pointwise Mutual Information (PPMI) models
+        associated with the TPPMIModel instance. It is useful for understanding if a word has been consistently
+        captured across different time intervals in the data.
+
+        Args:
+            word (str): The word to check for presence in the vocabularies.
+
+        Returns:
+            bool: True if the word is present in the intersection of all model vocabularies, False otherwise.
+        """
+        # Extract vocabularies from all PPMI models
+        all_vocabs = [set(model.get_vocabulary()) for model in self.ppmi_models.values()]
+
+        # Find the intersection of all vocabularies
+        common_vocab = set.intersection(*all_vocabs)
+
+        # Check if the word is in the common vocabulary
+        return word in common_vocab
+
