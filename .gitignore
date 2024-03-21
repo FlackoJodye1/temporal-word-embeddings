@@ -96,6 +96,8 @@ __pycache__/
 model/
 .DS_Store
 data/
+data_old/
+model_old/
 data_bak/
 data/cade/
 data/input/
