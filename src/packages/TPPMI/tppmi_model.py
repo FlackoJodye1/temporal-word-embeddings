@@ -232,7 +232,6 @@ class TPPMIModel:
         # Sort the drift values in descending order and select the top_n
         sorted_drift_values = dict(sorted(drift_values.items(), key=lambda item: item[1], reverse=True)[:top_n])
 
-        return sorted_drift_values
 
     def most_similar_words_by_vector(self, target_vector: np.ndarray, top_n=10) -> dict:
         """

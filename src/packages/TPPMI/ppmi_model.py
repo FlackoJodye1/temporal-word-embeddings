@@ -229,6 +229,44 @@ class PPMIModel:
             # If the word is not found in the vocabulary, raise an error
             raise ValueError(f"'{word}' is not in the vocabulary.")
 
+            return sorted_drift_values
+
+    def most_similar_words_by_vector_2(self, vector: np.ndarray, top_n=5) -> list:
+        """Get the n most similar words to a given vector based on cosine similarity.
+
+        Args:
+            vector (np.ndarray): The target vector.
+            top_n (int): Number of similar words to retrieve.
+
+        Returns:
+            list: List of tuples containing (similar_word, cosine_similarity_score).
+        """
+        if not isinstance(vector, np.ndarray):
+            raise ValueError("Input must be a numpy array.")
+
+        # Normalize the input vector to ensure cosine similarity is properly calculated
+        vector_norm = np.linalg.norm(vector)
+        if vector_norm > 0:
+            normalized_vector = vector / vector_norm
+        else:
+            raise ValueError("The input vector is zero, which is not allowed.")
+
+        # Pre-compute and normalize all word vectors
+        word_vectors = np.array([self.get_word_vector(word).values for word in self.vocab])
+        norms = np.linalg.norm(word_vectors, axis=1, keepdims=True)
+        normalized_word_vectors = word_vectors / np.where(norms > 0, norms, 1)
+
+        # Compute cosine similarities in a vectorized manner
+        similarities = np.dot(normalized_word_vectors, normalized_vector)
+
+        # Get the top n indices based on similarity scores
+        top_indices = np.argsort(-similarities)[:top_n]
+
+        # Retrieve the corresponding words and their similarity scores
+        most_similar = [(self.vocab[i], similarities[i]) for i in top_indices]
+
+        return most_similar
+
     def most_similar_words_by_vector(self, vector: np.ndarray, top_n=5) -> list:
         """Get the n most similar words to a given vector based on cosine similarity.
 
@@ -252,6 +290,9 @@ class PPMIModel:
         # Sort by similarity score in descending order and get the top n results
         most_similar = sorted(similarities, key=lambda x: x[1], reverse=True)[:top_n]
         return most_similar
+
+    def _norm_word_vectors(self):
+        self.vectors_norm = _l2_norm(self.vectors, replace=replace)
 
     def _cosine_similarity_vectors(self, vec1: np.ndarray, vec2: np.ndarray) -> float:
         """Calculate the cosine similarity between two vectors."""
@@ -339,6 +380,23 @@ class PPMIModel:
             pd.DataFrame: PPMI matrix as a DataFrame.
         """
         return pd.DataFrame(data=self.ppmi_matrix, columns=self.context_words, index=self.vocab)
+
+    def _l2_norm(m):
+        """Return an L2-normalized version of a matrix.
+
+        Parameters
+        ----------
+        m : np.array
+            The matrix to normalize.
+
+        Returns
+        -------
+
+        Note:
+        This was directly copied from the Cade-Package
+        """
+        dist = np.sqrt((m ** 2).sum(-1))[..., np.newaxis]
+        return (m / dist).astype(np.REAL)
 
     def save(self, month: str, path: Path):
         # save vocab
