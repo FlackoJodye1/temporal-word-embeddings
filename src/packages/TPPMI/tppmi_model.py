@@ -4,6 +4,7 @@ from datetime import date
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from scipy.interpolate import CubicSpline
+from tqdm.notebook import tqdm
 
 
 def _convert_dates(dates: list):
@@ -366,6 +367,38 @@ class TPPMIModel:
                     f"Context words mismatch found in model with key '{model_key}' compared to the first model.")
 
         return reference_context_words
+
+    def normalize_tppmi_scores(self):
+        """Normalize the TPPMI scores using L2 normalization across all time steps.
+
+        This method normalizes the PPMI vectors for each word across all time steps,
+        ensuring consistent representation over time.
+        """
+        # Step 1: Aggregate Vectors
+        all_vectors = []
+        word_order = {}  # Track order of words for reconstruction
+        for date, model in self.ppmi_models.items():
+            for word in model.get_vocabulary():
+                if word not in word_order:
+                    word_order[word] = len(word_order)
+                vector = model.get_word_vector(word).fillna(0).values
+                all_vectors.append(vector)
+
+        # Convert to a NumPy array for efficient computation
+        all_vectors_matrix = np.array(all_vectors)
+
+        # Step 2: Normalize
+        # Compute the L2 norm of each vector
+        norms = np.linalg.norm(all_vectors_matrix, axis=1, keepdims=True)
+        norms[norms == 0] = 1  # Prevent division by zero
+        normalized_vectors = all_vectors_matrix / norms
+
+        # Step 3: Apply Normalized Vectors
+        for date, model in tqdm(self.ppmi_models.items()):
+            for word, index in word_order.items():
+                normalized_vector = normalized_vectors[index]
+                # Update the model with the normalized vector
+                model.set_word_vector(word, normalized_vector)
 
     # ----------------------------------------------------------- #
     # ------------------------ Getters -------------------------- #

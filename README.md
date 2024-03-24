@@ -34,7 +34,7 @@ To download them, you need to run the download.py script.
 This will create 2 directories (data & model) with everything necessary in it, to run the notebooks.
 (Can take up to 10 minutes)
 
-* python src/data/download.py
+* python src/dataset/download.py
 
 ## Files
 

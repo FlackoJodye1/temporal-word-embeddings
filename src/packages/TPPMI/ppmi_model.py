@@ -291,9 +291,6 @@ class PPMIModel:
         most_similar = sorted(similarities, key=lambda x: x[1], reverse=True)[:top_n]
         return most_similar
 
-    def _norm_word_vectors(self):
-        self.vectors_norm = _l2_norm(self.vectors, replace=replace)
-
     def _cosine_similarity_vectors(self, vec1: np.ndarray, vec2: np.ndarray) -> float:
         """Calculate the cosine similarity between two vectors."""
         norm1 = np.linalg.norm(vec1)
@@ -397,6 +394,32 @@ class PPMIModel:
         """
         dist = np.sqrt((m ** 2).sum(-1))[..., np.newaxis]
         return (m / dist).astype(np.REAL)
+
+    def set_word_vector(self, word: str, new_vector: np.ndarray):
+        """
+        Set or update the vector representation of a word in the PPMI matrix.
+
+        Args:
+            word (str): The word for which the vector representation is to be set or updated.
+            new_vector (np.ndarray): The new vector representation for the word.
+
+        Raises:
+            ValueError: If the word is not in the vocabulary or if the new vector length
+                        does not match the number of context words.
+        """
+        # Ensure the word is in the vocabulary
+        if word not in self.vocab:
+            raise ValueError(f"'{word}' is not in the vocabulary.")
+
+        # Ensure the new vector has the correct shape
+        if new_vector.shape[0] != len(self.context_words):
+            raise ValueError("The length of the new vector does not match the number of context words.")
+
+        # Retrieve the index of the word in the vocabulary
+        word_index = self._vocab_word2ind[word]
+
+        # Update the PPMI matrix with the new vector
+        self.ppmi_matrix[word_index, :] = new_vector
 
     def save(self, month: str, path: Path):
         # save vocab
