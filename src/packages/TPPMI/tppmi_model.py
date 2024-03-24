@@ -377,7 +377,7 @@ class TPPMIModel:
         # Step 1: Aggregate Vectors
         all_vectors = []
         word_order = {}  # Track order of words for reconstruction
-        for date, model in self.ppmi_models.items():
+        for date, model in tqdm(self.ppmi_models.items()):
             for word in model.get_vocabulary():
                 if word not in word_order:
                     word_order[word] = len(word_order)
@@ -398,7 +398,8 @@ class TPPMIModel:
             for word, index in word_order.items():
                 normalized_vector = normalized_vectors[index]
                 # Update the model with the normalized vector
-                model.set_word_vector(word, normalized_vector)
+                if model.contains_in_vocab(word):
+                    model.set_word_vector(word, normalized_vector)
 
     # ----------------------------------------------------------- #
     # ------------------------ Getters -------------------------- #
