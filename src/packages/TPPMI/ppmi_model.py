@@ -226,12 +226,12 @@ class PPMIModel:
 
             # Convert the word vector into a pandas Series for easy handling,
             # using the context words as the index
-            return pd.Series(word_vector, index=self.context_words)
+            return word_vector #pd.Series(word_vector, index=self.context_words)
         else:
             # If the word is not found in the vocabulary, raise an error
             raise ValueError(f"'{word}' is not in the vocabulary.")
 
-    def most_similar_words_by_vector(self, vector: np.ndarray, top_n=5) -> list:
+    def most_similar_words_by_vector(self, vector: np.ndarray, top_n=10) -> list:
         """Get the n most similar words to a given vector based on cosine similarity.
 
         Assumes input vectors in the model and the target vector are already L2-normalized.
@@ -247,9 +247,10 @@ class PPMIModel:
             raise ValueError("Input must be a numpy array.")
 
         # Ensure the target vector is normalized and reshaped for dot product operation
+        '''
         vector = vector.flatten()
         if vector.ndim == 1:
-            vector = vector.reshape(1, -1)
+            vector = vector.reshape(1, -1)'''
 
         # Compute cosine similarities in a batch operation
         similarities = np.dot(self.ppmi_matrix, vector.T).flatten()

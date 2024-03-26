@@ -43,10 +43,10 @@ class TPPMIModel:
 
         #if normalize:
         #    self.normalize_tppmi_scores()
-        if smooth:
-            self._smooth_all()
+        #if smooth:
+        #    self._smooth_all()
 
-    def get_tppmi(self, target_words: list, selected_months=None, smooth=False) -> dict:
+    def get_tppmi(self, target_words: list, selected_months=None, smooth=False, printing=False) -> dict:
         """
         Calculate Time-Pointwise Mutual Information (TPPMI) matrices for a list of target words over time intervals.
 
@@ -102,13 +102,13 @@ class TPPMIModel:
                         # Extract ppmi-vector for work k of timestep i
                         ppmi_vector = self.ppmi_models[key].get_word_vector(word)
                         word_vectors.loc[f"{word}_{key}"] = ppmi_vector
-                    else:
+                    elif printing:
                         print(f"{word} - not in vocab of timestep: " + key)
             # Fill missing values (NaN) with zeros in the TPPMI matrix
             tppmi_dict[word] = word_vectors.fillna(0)
 
-        if smooth:
-            self._smooth(target_words, tppmi_dict)
+        #if smooth:
+        #    self._smooth(target_words, tppmi_dict)
 
         return tppmi_dict
 
@@ -408,7 +408,7 @@ class TPPMIModel:
                 print("Words changed to:", ", ".join(target_words))
                 return target_words
         else:
-            print("All words are contained in the vocabulary")
+            #print("All words are contained in the vocabulary")
             return target_words
 
     def _validate_alignment(self) -> list:
