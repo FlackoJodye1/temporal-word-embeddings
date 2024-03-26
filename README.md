@@ -2,10 +2,9 @@
 
 Source code of my bachelors thesis on the topic of temporal word embeddings
 
-To see the progress only the ***model-analysis.ipynb*** needs to be run.
+To see the progress only the notebooks in the qualitative/quantitative-analysis directories need to be run.
 
-The models are already build and are stored in the /model directory. There are two models per event which are trained
-separately on the corpus split at the given date. Alignment was enforced via the compass.
+The models are already build and are stored in the /model directory.
 
 ## Datasets
 
