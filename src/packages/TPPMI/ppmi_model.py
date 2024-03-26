@@ -32,7 +32,7 @@ def remove_infrequent_words(tokenized_corpus: list, min_freq: int) -> list:
 class PPMIModel:
     """Pointwise Mutual Information (PPMI) model for text data."""
 
-    def __init__(self, text_df, context_words, min_freq=0, ppmi_matrix=None, vocab=None):
+    def __init__(self, text_df, context_words, min_freq=0, ppmi_matrix=None, vocab=None, normalize=False):
         """Initialize the PPMIModel.
 
         Args:
@@ -58,13 +58,15 @@ class PPMIModel:
             self._context_word2ind = self._create_word_index(context_words)
 
             self.ppmi_matrix = ppmi_matrix.toarray()
+            if normalize:
+                self._l2_normalize()
             self._ppmi_matrix_exists = True
         else:
             raise ValueError("Either a dataframe containing texts or a dataframe containing ppmi-matrices has to be "
                              "provided.")
 
     @classmethod
-    def construct_from_data(cls, ppmi_matrix: sp.csr_matrix, vocab, context_words, min_freq=0):
+    def construct_from_data(cls, ppmi_matrix: sp.csr_matrix, vocab, context_words, min_freq=0, normalize=False):
         """Construct PPMIModel from precomputed PPMI matrix (DataFrame).
 
         Args:
@@ -75,15 +77,13 @@ class PPMIModel:
             :param vocab: vocabulary of the PMIModel instance.
             :param ppmi_matrix:
         """
-        return cls(None, context_words, min_freq, ppmi_matrix, vocab)
+        return cls(None, context_words, min_freq, ppmi_matrix, vocab, normalize=normalize)
 
     @classmethod
-    def construct_from_texts(cls, text_df: pd.DataFrame, context_words, min_freq=0):
+    def construct_from_texts(cls, text_df: pd.DataFrame, context_words, min_freq=0, normalize=False):
         """Construct PPMIModel from text DataFrame.
         """
-        return cls(text_df, context_words, min_freq, None, None)
-
-    # def __init__(self, text_df, context_words, min_freq=0, ppmi_matrix=None, vocab=None):
+        return cls(text_df, context_words, min_freq, None, None, normalize=normalize)
 
     def _process_and_tokenize(self, text_df: pd.DataFrame, min_freq=0) -> list:
         tokenizer = nltk.tokenize.TreebankWordTokenizer()
@@ -148,7 +148,7 @@ class PPMIModel:
 
         return co_matrix
 
-    def compute_ppmi_matrix(self, window_size=5, epsilon=1e-10) -> np.ndarray:
+    def compute_ppmi_matrix(self, window_size=5, epsilon=1e-10, normalize = False) -> np.ndarray:
         """Compute the Pointwise Mutual Information (PPMI) matrix with improved handling of zero probabilities.
 
         Args:
@@ -175,6 +175,8 @@ class PPMIModel:
             pmi = np.log(ratio.clip(min=epsilon))
             self._ppmi_matrix_exists = True
             self.ppmi_matrix = np.maximum(pmi, 0)
+            if normalize:
+                self._l2_normalize()
             return self.ppmi_matrix
 
     def most_similar_words(self, target_word: str, top_n=5) -> list:
@@ -229,13 +231,13 @@ class PPMIModel:
             # If the word is not found in the vocabulary, raise an error
             raise ValueError(f"'{word}' is not in the vocabulary.")
 
-            return sorted_drift_values
-
-    def most_similar_words_by_vector_2(self, vector: np.ndarray, top_n=5) -> list:
+    def most_similar_words_by_vector(self, vector: np.ndarray, top_n=5) -> list:
         """Get the n most similar words to a given vector based on cosine similarity.
 
+        Assumes input vectors in the model and the target vector are already L2-normalized.
+
         Args:
-            vector (np.ndarray): The target vector.
+            vector (np.ndarray): The target vector, expected to be normalized.
             top_n (int): Number of similar words to retrieve.
 
         Returns:
@@ -244,22 +246,15 @@ class PPMIModel:
         if not isinstance(vector, np.ndarray):
             raise ValueError("Input must be a numpy array.")
 
-        # Normalize the input vector to ensure cosine similarity is properly calculated
-        vector_norm = np.linalg.norm(vector)
-        if vector_norm > 0:
-            normalized_vector = vector / vector_norm
-        else:
-            raise ValueError("The input vector is zero, which is not allowed.")
+        # Ensure the target vector is normalized and reshaped for dot product operation
+        vector = vector.flatten()
+        if vector.ndim == 1:
+            vector = vector.reshape(1, -1)
 
-        # Pre-compute and normalize all word vectors
-        word_vectors = np.array([self.get_word_vector(word).values for word in self.vocab])
-        norms = np.linalg.norm(word_vectors, axis=1, keepdims=True)
-        normalized_word_vectors = word_vectors / np.where(norms > 0, norms, 1)
+        # Compute cosine similarities in a batch operation
+        similarities = np.dot(self.ppmi_matrix, vector.T).flatten()
 
-        # Compute cosine similarities in a vectorized manner
-        similarities = np.dot(normalized_word_vectors, normalized_vector)
-
-        # Get the top n indices based on similarity scores
+        # Get the indices of the top_n most similar words
         top_indices = np.argsort(-similarities)[:top_n]
 
         # Retrieve the corresponding words and their similarity scores
@@ -267,39 +262,14 @@ class PPMIModel:
 
         return most_similar
 
-    def most_similar_words_by_vector(self, vector: np.ndarray, top_n=5) -> list:
-        """Get the n most similar words to a given vector based on cosine similarity.
-
-        Args:
-            vector (np.ndarray): The target vector.
-            top_n (int): Number of similar words to retrieve.
-
-        Returns:
-            list: List of tuples containing (similar_word, cosine_similarity_score).
-        """
-        if not isinstance(vector, np.ndarray):
-            raise ValueError("Input must be a numpy array.")
-
-        similarities = []
-
-        for word in self.vocab:
-            word_vector = self.get_word_vector(word).values  # Ensure we're working with np.ndarray
-            similarity = self._cosine_similarity_vectors(vector, word_vector)
-            similarities.append((word, similarity))
-
-        # Sort by similarity score in descending order and get the top n results
-        most_similar = sorted(similarities, key=lambda x: x[1], reverse=True)[:top_n]
-        return most_similar
-
-    def _cosine_similarity_vectors(self, vec1: np.ndarray, vec2: np.ndarray) -> float:
+    def _cosine_similarity_of_vectors(self, vec1: np.ndarray, vec2: np.ndarray) -> float:
         """Calculate the cosine similarity between two vectors."""
-        norm1 = np.linalg.norm(vec1)
-        norm2 = np.linalg.norm(vec2)
-        if norm1 == 0 or norm2 == 0:
-            return 0
+        # Ensure vectors are flattened to 1D to avoid shape issues
+        vec1 = vec1.flatten()
+        vec2 = vec2.flatten()
+
         dot_product = np.dot(vec1, vec2)
-        similarity = dot_product / (norm1 * norm2)
-        return similarity
+        return dot_product.item()
 
     def cosine_similarity(self, word1: str, word2: str) -> float:
         """Calculate the cosine similarity between two words in the embedding space."""
@@ -431,3 +401,8 @@ class PPMIModel:
         # print confirmation-info
         print(f"PPMI data for {month} saved successfully.")
         print(f"Vocabulary Size: {self.get_vocabulary_size()}")
+
+    def _l2_normalize(self):
+        norms = np.linalg.norm(self.ppmi_matrix, axis=1, keepdims=True)
+        norms[norms == 0] = 1  # Avoid division by zero
+        self.ppmi_matrix = self.ppmi_matrix / norms

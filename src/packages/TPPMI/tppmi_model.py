@@ -21,7 +21,7 @@ def _convert_dates(dates: list):
 class TPPMIModel:
     """Time-Pointwise Mutual Information (TPPMI) model."""
 
-    def __init__(self, ppmi_models: dict, dates="months"):
+    def __init__(self, ppmi_models: dict, dates="months", normalize=False, smooth=False):
         """Initialize the TPPMIModel.
 
         Args:
@@ -40,6 +40,11 @@ class TPPMIModel:
         self.vocab = sorted(list(set().union(*[model.get_vocabulary() for model in ppmi_models.values()])))
         self._vocab_word2ind = self._create_word_index(self.vocab)
         self._context_word2ind = self._create_word_index(self.context_words)
+
+        #if normalize:
+        #    self.normalize_tppmi_scores()
+        if smooth:
+            self._smooth_all()
 
     def get_tppmi(self, target_words: list, selected_months=None, smooth=False) -> dict:
         """
@@ -140,6 +145,68 @@ class TPPMIModel:
 
         return {row_name: vector for row_name, vector in zip(row_names, vectors)}
 
+    def _smooth_all(self):
+        # Convert dates to a numeric scale (e.g., days since the first date)
+        if self.is_in_months:
+            num_dates = np.array([(date - self.dates[0]).days for date in self.dates])
+        else:
+            num_dates = np.array([(int(date) - int(self.dates[0])) for date in self.dates])
+
+        # Iterate over each word in the vocabulary
+        for word in tqdm(self.vocab):
+            # Retrieve TPPMI values for the current word across all dates and context words
+            # Initialize a dictionary to hold the smoothed vectors for each date
+            smoothed_vectors = {}
+
+            for date_key, ppmi_model in self.ppmi_models.items():
+                if word in ppmi_model.get_vocabulary():
+                    # If the word is in the current model's vocabulary, get its vector
+                    vector = ppmi_model.get_word_vector(word)
+                    # Initialize a DataFrame if it's not already done
+                    if word not in smoothed_vectors:
+                        smoothed_vectors[word] = pd.DataFrame(index=self.context_words,
+                                                              columns=[date_key for date_key in
+                                                                       self.ppmi_models.keys()],
+                                                              dtype=float)
+                    # Fill the corresponding column with the word's vector
+                    smoothed_vectors[word][date_key] = vector
+                else:
+                    # If the word is not in the current model's vocabulary, it's vector is considered as zeros
+                    if word not in smoothed_vectors:
+                        smoothed_vectors[word] = pd.DataFrame(index=self.context_words,
+                                                              columns=[date_key for date_key in
+                                                                       self.ppmi_models.keys()],
+                                                              dtype=float)
+                    smoothed_vectors[word][date_key] = np.zeros(len(self.context_words))
+
+            # After collecting all vectors for the word, apply smoothing
+            for context_word in self.context_words:
+                # Extract the values for the current context word across all dates
+                y = smoothed_vectors[word].loc[context_word].values
+
+                # Indices of non-NaN (or non-zero, assuming zero-filling for missing words) values
+                valid_indices = np.where(y != 0)[0]
+
+                if len(valid_indices) > 1:  # Ensure there are at least two points for spline
+                    # Create a cubic spline for non-zero values
+                    spline = CubicSpline(num_dates[valid_indices], y[valid_indices])
+
+                    # Evaluate the spline across all dates to get smoothed values
+                    smoothed_values = spline(num_dates)
+
+                    # Update the smoothed vector with the smoothed values for the context word
+                    smoothed_vectors[word].loc[context_word] = smoothed_values
+                else:
+                    # If only one non-zero value, cannot smooth; retain original values
+                    pass
+
+        # Write back the smoothed vectors to the respective PPMI model
+        for date_key, ppmi_model in self.ppmi_models.items():
+            if word in ppmi_model.get_vocabulary():
+                # Only update the model if the word was originally present
+                smoothed_vector = smoothed_vectors[word][date_key].values
+                ppmi_model.set_word_vector(word, smoothed_vector)
+
     def _smooth(self, target_words: list, tppmi_dict: dict):
         # Convert dates to a numeric scale (e.g., days since the first date)
         num_dates = np.array([(date - self.dates[0]).days for date in self.dates])
@@ -233,6 +300,7 @@ class TPPMIModel:
         # Sort the drift values in descending order and select the top_n
         sorted_drift_values = dict(sorted(drift_values.items(), key=lambda item: item[1], reverse=True)[:top_n])
 
+        return sorted_drift_values
 
     def most_similar_words_by_vector(self, target_vector: np.ndarray, top_n=10) -> dict:
         """
@@ -464,4 +532,3 @@ class TPPMIModel:
 
         # Check if the word is in the common vocabulary
         return word in common_vocab
-

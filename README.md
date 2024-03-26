@@ -48,13 +48,13 @@ It was introduced by Yao et al. 2018 in their paper "Dynamic Word Embeddings for
     │   ├── __init__.py    <- Makes src a Python module
     │   │
     │   ├── dataset           
-    │   │   └── download.py <- Scripts to download the data
+    │   │   └── download.py     <- Script to download the data
     │   │
-    │   ├── packages   <- Implementation of the TPPMI-Model as a package
+    │   ├── packages        <- Implementation of the TPPMI-Model as a package
     │   │
-    │   ├── test  <- utility functions for the quantitative-evaluation
+    │   ├── test            <- Utility functions for the quantitative-evaluation
     │   │
-    │   └── visualizations <- utility functions for the qualitative-evaluation
+    │   └── visualizations  <- Utility functions for the qualitative-evaluation
 
 
 --------
