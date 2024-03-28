@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from glob import glob
+from pathlib import Path
 from tqdm.notebook import tqdm
 
 import sys
@@ -181,3 +183,29 @@ def get_similarites_of_models_tppmi(model: TPPMIModel, test_word_dict: dict) -> 
     for word, vector in tqdm(test_word_dict.items()):
         similarities[word] = model.most_similar_words_by_vector(vector)
     return similarities
+
+
+def load_score_tables(data_dir):
+    """
+    Load all CSV score tables from a specified directory and return a dictionary of DataFrames.
+    The dictionary keys will be sorted alphabetically.
+
+    Args:
+    data_dir (Path or str): The directory path where the score tables are saved as CSV files.
+
+    Returns:
+    dict: A dictionary of pandas DataFrames, sorted by the model names.
+    """
+    # Use glob to find all CSV files in the directory
+    csv_files = glob(str(data_dir / "*.csv"))
+
+    # Create a dictionary with model names and their DataFrames, then sort by model name
+    score_tables = {
+        Path(csv_file).stem: pd.read_csv(csv_file, index_col=0)
+        for csv_file in csv_files
+    }
+
+    # Sort the dictionary by keys (model names) and return it
+    sorted_score_tables = dict(sorted(score_tables.items(), key=lambda x: x[0].lower()))
+
+    return sorted_score_tables
