@@ -18,36 +18,83 @@ pio.templates.default = "plotly"
 
 # ------------------ Cosine plotting ------------------ #
 
-def plot_cosine_similarity_tppmi(target_word, test_words, tppmi_model, selected_months=None, event=None, event_name="",
-                                 y_upper=1.1):
-    # used for plotting a baseline
+def plot_cosine_similarity_tppmi_2(target_word, test_words, tppmi_model, selected_timesteps=None,
+                                   elections=None, event_name="Elections",
+                                   y_upper=0.8):
+    # Use a baseline from provided test words
     words = test_words.copy()
-    words.insert(0, target_word)
 
-    if selected_months is None:
-        selected_months = [f"{date.month:02d}" for date in tppmi_model.dates]
+    if selected_timesteps is None:
+        selected_timesteps = [date for date in tppmi_model.dates]
+
+    print(selected_timesteps)
 
     try:
         cosine_similarities = {
             key: {
                 word: model.cosine_similarity(target_word, word) for word in words
             }
-            for key, model in tppmi_model.ppmi_models.items() if key in selected_months
+            for key, model in tppmi_model.ppmi_models.items() if key in selected_timesteps
         }
     except ValueError as e:
         print("All words need to be in the vocab of all timesteps.")
         print(e.args[0])
         return
 
-    similarity_values = {word: [cosine_similarities[str(t)][word] for t in selected_months] for word in words}
+    similarity_values = {word: [cosine_similarities[str(t)][word] for t in selected_timesteps] for word in words}
+
+    # Plotting
+    plt.figure(figsize=(10, 6))
+    for word in words:
+        plt.plot(selected_timesteps, similarity_values[word], marker='o', label=word)
+
+    if elections:
+        for term_end in elections:
+            plt.axvline(x=term_end, color='gray', linestyle='--',
+                        label=event_name if 'Elections' not in plt.gca().get_legend_handles_labels()[
+                            1] else "")
+
+    plt.ylabel('Cosine Similarity')
+    plt.title(f'Cosine Similarity of "{target_word}" with Selected Test Words Over Time')
+    plt.xticks(rotation=90)
+    plt.grid(True)
+    plt.ylim(0, y_upper)
+    plt.legend(loc='upper right', bbox_to_anchor=(1, 1))
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_cosine_similarity_tppmi(target_word, test_words, tppmi_model, selected_timesteps=None, event=None,
+                                 event_name="",
+                                 y_upper=1.1):
+    # used for plotting a baseline
+    words = test_words.copy()
+    words.insert(0, target_word)
+
+    if selected_timesteps is None:
+        selected_timesteps = [date for date in tppmi_model.dates]
+
+    try:
+        cosine_similarities = {
+            key: {
+                word: model.cosine_similarity(target_word, word) for word in words
+            }
+            for key, model in tppmi_model.ppmi_models.items() if key in selected_timesteps
+        }
+    except ValueError as e:
+        print("All words need to be in the vocab of all timesteps.")
+        print(e.args[0])
+        return
+
+    similarity_values = {word: [cosine_similarities[str(t)][word] for t in selected_timesteps] for word in words}
 
     # Plotting
     plt.figure(figsize=(10, 6))
     for word in words:
         if word == target_word:
-            plt.plot(selected_months, similarity_values[word], marker='o', label=word, color="red")
+            plt.plot(selected_timesteps, similarity_values[word], marker='o', label=word, color="red")
         else:
-            plt.plot(selected_months, similarity_values[word], marker='o', label=word)
+            plt.plot(selected_timesteps, similarity_values[word], marker='o', label=word)
 
     if event:
         plt.axvline(x=event, color='gray', linestyle='--', label=event_name)
@@ -55,9 +102,10 @@ def plot_cosine_similarity_tppmi(target_word, test_words, tppmi_model, selected_
     plt.xlabel('Month')
     plt.ylabel('Cosine Similarity')
     plt.title(f'Cosine Similarity of "{target_word}" with selected Test-Words')
+    plt.xticks(rotation=90)
     plt.grid(True)
     plt.ylim(0, y_upper)
-    plt.legend()
+    plt.legend(loc='upper right', bbox_to_anchor=(1, 0.9))
     plt.tight_layout()
     plt.show()
 

@@ -21,7 +21,7 @@ def _convert_dates(dates: list):
 class TPPMIModel:
     """Time-Pointwise Mutual Information (TPPMI) model."""
 
-    def __init__(self, ppmi_models: dict, dates="months", normalize=False, smooth=False):
+    def __init__(self, ppmi_models: dict, dates="months", normalize=False, smooth=True):
         """Initialize the TPPMIModel.
 
         Args:
@@ -41,10 +41,10 @@ class TPPMIModel:
         self._vocab_word2ind = self._create_word_index(self.vocab)
         self._context_word2ind = self._create_word_index(self.context_words)
 
-        #if normalize:
-        #    self.normalize_tppmi_scores()
-        #if smooth:
-        #    self._smooth_all()
+        if normalize:
+            self.normalize_tppmi_scores()
+        if smooth:
+            self._smooth_all()
 
     def get_tppmi(self, target_words: list, selected_months=None, smooth=False, printing=False) -> dict:
         """
@@ -107,7 +107,7 @@ class TPPMIModel:
             # Fill missing values (NaN) with zeros in the TPPMI matrix
             tppmi_dict[word] = word_vectors.fillna(0)
 
-        #if smooth:
+        # if smooth:
         #    self._smooth(target_words, tppmi_dict)
 
         return tppmi_dict
@@ -302,7 +302,8 @@ class TPPMIModel:
 
         return sorted_drift_values
 
-    def most_similar_words_by_vector(self, target_vector: np.ndarray, top_n=10) -> dict:
+    def most_similar_words_by_vector(self, target_vector: np.ndarray, top_n=10, filter=False, entity_list=None,
+                                     label=None) -> dict:
         """
        Finds and returns the most similar words to a given target vector across different PPMI models.
 
@@ -318,9 +319,32 @@ class TPPMIModel:
         similar_words = {}
 
         for date, model in self.ppmi_models.items():
-            similar_words[date] = model.most_similar_words_by_vector(target_vector, top_n)
+            if filter:
+                raw_similarities = model.most_similar_words_by_vector(target_vector, 2 * top_n)
+                filtered_similarities = self.filter_similarities(raw_similarities, label, entity_list, top_n)
+                increment = 0
+                while len(filtered_similarities) < top_n:
+                    increment += 10
+                    print(f"incremented by: {increment}")
+                    additional_similarities = model.most_similar_words_by_vector(target_vector, top_n + increment)
+                    filtered_similarities = self.filter_similarities(additional_similarities, label, entity_list, top_n)
+                similarities = filtered_similarities
+            else:
+                similarities = model.most_similar_words_by_vector(target_vector, top_n)
+            similar_words[date] = similarities
 
         return similar_words
+
+    def filter_similarities(self, similarity_list, label, entity_list, top_n):
+        new_value_list = []
+        for word, similarity in similarity_list:
+            word_label = entity_list['entity'].loc[entity_list['token'] == word].iloc[0] if not entity_list.loc[
+                entity_list['token'] == word].empty else None
+            if word_label == label:
+                new_value_list.append((word, similarity))  # Assuming similarity scores need to be preserved
+            if len(new_value_list) >= top_n:
+                break
+        return new_value_list
 
     def most_similar_words(self, target_word: str, top_n=5) -> dict:
         """
@@ -408,7 +432,7 @@ class TPPMIModel:
                 print("Words changed to:", ", ".join(target_words))
                 return target_words
         else:
-            #print("All words are contained in the vocabulary")
+            # print("All words are contained in the vocabulary")
             return target_words
 
     def _validate_alignment(self) -> list:
