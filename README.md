@@ -80,15 +80,6 @@ https://www.nature.com/articles/sdata201575
 
 3. Now run the preprocessing-pantheon-dataset.ipynb
 
-### Download Datasets & Models
-
-The datasets & models are stored outside the repository on my personal Google Drive.
-To download them, you need to run the download.py script.
-This will create 2 directories (data & model) with everything necessary in it, to run the notebooks.
-(Can take up to 10 minutes)
-
-* python src/dataset/download.py
-
 ## How to reprocude
 
 1. Installation as described above
