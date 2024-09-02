@@ -285,12 +285,7 @@ class PPMIModel:
         vector2 = self.get_word_vector(word2)
 
         if vector1 is None or vector2 is None:
-            # Handle missing vectors appropriately.
             return 0.0
-
-        '''
-        vector1 = vector1.fillna(0)
-        vector2 = vector2.fillna(0)'''
 
         norm1 = np.linalg.norm(vector1)
         norm2 = np.linalg.norm(vector2)

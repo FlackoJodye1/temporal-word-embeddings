@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 # (currently not publicly available)
 # ------------------------------------------------------------------------------
 
-
 def calc_tppmi(ppmi_list, dates=None, words=None, smooth=True):
     """
     Calculate tPPMI matrices for a given list of PPMI matrices.

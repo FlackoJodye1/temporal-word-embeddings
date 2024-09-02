@@ -101,15 +101,6 @@ def get_similarities_of_models(model_dict: dict, test_word_dict: dict, entity_li
     return similarities
 
 
-def get_similarities_of_models_old(model_dict: dict, test_word_dict: dict, top_n=10) -> dict:
-    similarities = dict()
-    for test_word in tqdm(test_word_dict.items()):
-        similarities[test_word[0]] = dict()
-        for model in model_dict.items():
-            similarities[test_word[0]][model[0].split("_")[1]] = model[1].wv.similar_by_vector(test_word[1], topn=20)
-    return similarities
-
-
 def get_similarities_of_models_static(model, test_word_dict: dict, entity_list: pd.DataFrame, top_n=5,
                                       filter=False) -> dict:
     similarities = {}

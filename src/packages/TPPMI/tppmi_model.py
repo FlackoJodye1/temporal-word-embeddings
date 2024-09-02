@@ -6,7 +6,6 @@ from sklearn.decomposition import PCA
 from scipy.interpolate import CubicSpline
 from tqdm.notebook import tqdm
 
-
 def _convert_dates(dates: list):
     # Define a custom order of months starting from June (6) to April (4)
     custom_month_order = [6, 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5]
@@ -46,7 +45,7 @@ class TPPMIModel:
         if smooth:
             self._smooth_all()
 
-    def get_tppmi(self, target_words: list, selected_months=None, smooth=False, printing=False) -> dict:
+    def get_tppmi(self, target_words: list, selected_months=None, smooth=True, printing=False) -> dict:
         """
         Calculate Time-Pointwise Mutual Information (TPPMI) matrices for a list of target words over time intervals.
 
@@ -106,9 +105,6 @@ class TPPMIModel:
                         print(f"{word} - not in vocab of timestep: " + key)
             # Fill missing values (NaN) with zeros in the TPPMI matrix
             tppmi_dict[word] = word_vectors.fillna(0)
-
-        # if smooth:
-        #    self._smooth(target_words, tppmi_dict)
 
         return tppmi_dict
 

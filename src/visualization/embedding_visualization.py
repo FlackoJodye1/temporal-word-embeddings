@@ -17,10 +17,9 @@ pio.templates.default = "plotly"
 
 
 # ------------------ Cosine plotting ------------------ #
-
 def plot_cosine_similarity_tppmi_2(target_word, test_words, tppmi_model, selected_timesteps=None,
                                    elections=None, event_name="Elections",
-                                   y_upper=0.8):
+                                   y_upper=0.8, save_path=None):
     # Use a baseline from provided test words
     words = test_words.copy()
 
@@ -44,24 +43,31 @@ def plot_cosine_similarity_tppmi_2(target_word, test_words, tppmi_model, selecte
     similarity_values = {word: [cosine_similarities[str(t)][word] for t in selected_timesteps] for word in words}
 
     # Plotting
-    plt.figure(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(10, 6))
+    fig.patch.set_facecolor('white')  # Set the figure's background color to white
+    ax.set_facecolor('white')  # Set the axes' background color to white
+
     for word in words:
-        plt.plot(selected_timesteps, similarity_values[word], marker='o', label=word)
+        ax.plot(selected_timesteps, similarity_values[word], marker='o', label=word)
 
     if elections:
         for term_end in elections:
-            plt.axvline(x=term_end, color='gray', linestyle='--',
-                        label=event_name if 'Elections' not in plt.gca().get_legend_handles_labels()[
-                            1] else "")
+            ax.axvline(x=term_end, color='gray', linestyle='--',
+                       label=event_name if 'Elections' not in ax.get_legend_handles_labels()[1] else "")
 
-    plt.ylabel('Cosine Similarity')
-    plt.title(f'Cosine Similarity of "{target_word}" with Selected Test Words Over Time')
-    plt.xticks(rotation=90)
-    plt.grid(True)
-    plt.ylim(0, y_upper)
-    plt.legend(loc='upper right', bbox_to_anchor=(1, 1))
+    ax.set_ylabel('Cosine Similarity')
+    ax.set_title(f'Cosine Similarity of "{target_word}" with Selected Test Words Over Time')
+    ax.set_xticks(selected_timesteps)
+    ax.set_xticklabels(selected_timesteps, rotation=90)
+    ax.grid(True, color='gray', linestyle='--', linewidth=0.5)  # Set grid lines
+    ax.set_ylim(0, y_upper)
+    ax.legend(loc='upper right', bbox_to_anchor=(1, 1))
     plt.tight_layout()
     plt.show()
+
+    # Save the figure as an SVG file if a save path is provided
+    if save_path:
+        plt.savefig(save_path, format='svg')
 
 
 def plot_cosine_similarity_tppmi(target_word, test_words, tppmi_model, selected_timesteps=None, event=None,
