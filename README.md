@@ -8,16 +8,15 @@ A from-scratch implementation of **Temporal Pointwise Mutual Information (TPPMI)
 
 ## Overview
 
-Words change meaning. "Cloud" meant something different before 2006. "Tweet" before 2009. Tracking these shifts requires embeddings that are not just context-sensitive, but *time-sensitive*.
+Static word embeddings assign a single vector to each word — missing the fact that "bush" in 2004 and "obama" in 2012 occupy the same semantic role. TPPMI tracks how word meaning shifts over time by representing each word as a trajectory of PPMI vectors across time slices, using a fixed set of high-frequency context words as a shared coordinate system.
 
-This project implements TPPMI — a count-based approach to temporal word embeddings — and evaluates it on 27 years of New York Times articles (1990–2016) and 11 months of social media data (2022–2023). The quantitative evaluation reproduces the benchmark from Di Carlo et al. (2019) using temporal word analogy test sets from Yao et al. (2018).
+Trained on 99,872 NYT articles (1990–2016) and benchmarked on 8,272 temporal analogy queries, TPPMI achieves competitive performance against TWEC using only co-occurrence statistics — no neural training, no alignment, no GPU.
 
 **Highlights:**
-- Achieves MP@10 of 0.475 on dynamic temporal analogies using only count-based statistics — no neural training required
-- Custom TPPMI implementation with cubic spline smoothing across time steps
-- Evaluated against TWEC and StaticWord2Vec on 8,272 temporal analogy queries
+- Count-based temporal embeddings — no neural training, no GPU, fully interpretable
+- Benchmarked against TWEC and SW2V on 8,272 temporal analogy queries (NYT, 1990–2016)
 - Sensitivity analysis across embedding dimensions (200 → 5,000 context words)
-- Qualitative analysis: cosine similarity trajectories, 2D PCA/t-SNE projections
+- Published at CPSS @ KONVENS 2024 (ACL Anthology)
 
 ---
 
@@ -43,9 +42,9 @@ Raw corpus  →  Tokenize & split by time  →  PPMI matrix per slice  →  TPPM
 
 ### Intuition
 
-PPMI captures how strongly a word and a context word co-occur compared to chance. A high PPMI between "bank" and "loan" means they appear together far more often than random co-occurrence would predict — indicating a strong semantic association.
+A word's meaning is defined by the company it keeps. PPMI quantifies this: high PPMI between "president" and "reelection" means their co-occurrence is far above chance — a strong, specific association. TPPMI computes this per time slice and stacks the results into a word trajectory across time.
 
-TPPMI extends this idea across time: instead of a single static vector per word, each word gets a *trajectory* — a sequence of PPMI vectors, one per time step. By comparing how these trajectories evolve, we can detect and quantify semantic drift.
+Unlike neural temporal embeddings (e.g. TWEC, dynamic Bernoulli embeddings), TPPMI requires no training and no alignment step. Each embedding dimension directly corresponds to a named context word, making the model fully interpretable and applicable to small or sparse corpora where neural methods underfit.
 
 ### PPMI Formula
 
@@ -107,6 +106,14 @@ Models are evaluated on the temporal analogy task: given a word at time $t_1$, r
 
 TPPMI reaches MP@10 of **0.791 on static** and **0.475 on dynamic** analogies using only count-based statistics — no neural training required. The dynamic subset is the meaningful benchmark: SW2V scores 0.0 MP@1 there by construction.
 
+## Key Results
+
+- **Competitive without neural training:** TPPMI reaches MRR@10 of 0.302 on dynamic analogies vs. TWEC's 0.402 — a 25% gap with zero learned parameters
+- **Strong on static analogies:** MP@10 of 0.791, within 3 points of TWEC (0.818)
+- **Fully interpretable:** each embedding dimension maps to a specific context word — you can read off *why* two words are similar
+- **Data-efficient:** effective on corpora too small for neural temporal models; validated on both decade-scale news and 11-month social media data
+- **Qualitative validity:** correctly tracks presidential transitions from raw co-occurrence statistics (see figure below)
+
 **Qualitative example:** Cosine similarity of "president" with U.S. president names over 1990–2016. Dotted lines mark election years. TPPMI captures the transitions without any supervision.
 
 ![Cosine similarity of 'president' with U.S. president names over time](figures/cosine-plot-presidents.png)
@@ -143,8 +150,6 @@ TPPMI reaches MP@10 of **0.791 on static** and **0.475 on dynamic** analogies us
 ---
 
 ## Usage
-
-### Installation
 
 ```bash
 git clone https://github.com/FlackoJodye1/temporal-word-embeddings.git
